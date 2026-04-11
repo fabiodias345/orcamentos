@@ -170,16 +170,68 @@
       document.getElementById('tab-content').innerHTML = `
         <div class="glass p-8 rounded-2xl mb-8">
            <h2 class="text-xl font-bold mb-6 text-yellow-400">Cadastrar Novo Cliente</h2>
-           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <input type="text" id="cli-nome" placeholder="Nome do Cliente" class="input-glass p-3 rounded-lg">
-             <input type="text" id="cli-tel" placeholder="Telefone/WhatsApp" class="input-glass p-3 rounded-lg">
+           
+           <div class="space-y-6">
+             <!-- Seção de Contato -->
+             <div>
+                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Informações Pessoais</h3>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div class="flex flex-col">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NOME COMPLETO</label>
+                     <input type="text" id="cli-nome" placeholder="Ex: João da Silva" class="input-glass p-3 rounded-lg">
+                   </div>
+                   <div class="flex flex-col">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">E-MAIL</label>
+                     <input type="email" id="cli-email" placeholder="email@cliente.com" class="input-glass p-3 rounded-lg">
+                   </div>
+                 </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                   <div class="flex flex-col">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">WHATSAPP / TELEFONE</label>
+                     <input type="text" id="cli-tel" placeholder="(43) 99999-9999" class="input-glass p-3 rounded-lg">
+                   </div>
+                 </div>
+             </div>
+
+             <!-- Seção de Endereço -->
+             <div>
+                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 mt-6 border-b border-white/5 pb-2">Localização</h3>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                   <div class="flex flex-col">
+                     <label class="text-xs text-yellow-500/80 mb-1 ml-1 font-semibold">CEP (Digite para preencher)</label>
+                     <input type="text" id="cli-cep" placeholder="00000-000" class="input-glass p-3 rounded-lg font-bold text-yellow-400" onkeyup="if(this.value.length>=8) UI.fetchCEP()" onblur="UI.fetchCEP()">
+                   </div>
+                 </div>
+                 
+                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                   <div class="flex flex-col md:col-span-9">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">RUA / LOGRADOURO</label>
+                     <input type="text" id="cli-rua" placeholder="Nome da Rua" class="input-glass p-3 rounded-lg">
+                   </div>
+                   <div class="flex flex-col md:col-span-3">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NÚMERO</label>
+                     <input type="text" id="cli-num" placeholder="Ex: 123" class="input-glass p-3 rounded-lg">
+                   </div>
+                 </div>
+
+                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+                   <div class="flex flex-col md:col-span-4">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">BAIRRO</label>
+                     <input type="text" id="cli-bairro" placeholder="Bairro" class="input-glass p-3 rounded-lg">
+                   </div>
+                   <div class="flex flex-col md:col-span-6">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">CIDADE</label>
+                     <input type="text" id="cli-cidade" placeholder="Cidade" class="input-glass p-3 rounded-lg">
+                   </div>
+                   <div class="flex flex-col md:col-span-2">
+                     <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">UF</label>
+                     <input type="text" id="cli-uf" placeholder="PR" class="input-glass p-3 rounded-lg">
+                   </div>
+                 </div>
+             </div>
+             
+             <button onclick="UI.saveCliente()" id="btn-save-cli" class="btn-primary w-full py-4 rounded-xl mt-8 text-sm font-bold shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 transition-all transition-duration-300">SALVAR NOVO CLIENTE</button>
            </div>
-           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-             <input type="email" id="cli-email" placeholder="E-mail" class="input-glass p-3 rounded-lg">
-             <input type="text" id="cli-cep" placeholder="CEP" class="input-glass p-3 rounded-lg" onblur="UI.fetchCEP()">
-             <input type="text" id="cli-end" placeholder="Endereço Completo" class="input-glass p-3 rounded-lg">
-           </div>
-           <button onclick="UI.saveCliente()" id="btn-save-cli" class="btn-primary w-full py-3 rounded-xl mt-6 text-sm font-bold">SALVAR NOVO CLIENTE</button>
         </div>
 
         <div class="glass p-8 rounded-2xl">
@@ -213,19 +265,31 @@
              let res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
              let data = await res.json();
              if(!data.erro) {
-                 document.getElementById('cli-end').value = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`;
+                 document.getElementById('cli-rua').value = data.logradouro || '';
+                 document.getElementById('cli-bairro').value = data.bairro || '';
+                 document.getElementById('cli-cidade').value = data.localidade || '';
+                 document.getElementById('cli-uf').value = data.uf || '';
+                 document.getElementById('cli-num').focus(); // Joga pra ele
              }
          } catch(e) { console.error("Erro no viacep"); }
       }
     },
 
     saveCliente: () => {
+      const rua = document.getElementById('cli-rua').value;
+      const num = document.getElementById('cli-num').value;
+      const bairro = document.getElementById('cli-bairro').value;
+      const cid = document.getElementById('cli-cidade').value;
+      const uf = document.getElementById('cli-uf').value;
+      
+      const endMontado = `${rua}, ${num} - ${bairro}, ${cid} - ${uf}`;
+
       const dados = {
         nome: document.getElementById('cli-nome').value,
         tel: document.getElementById('cli-tel').value,
         email: document.getElementById('cli-email').value,
         cep: document.getElementById('cli-cep').value,
-        end: document.getElementById('cli-end').value
+        end: endMontado
       };
       
       if(!dados.nome) return alert("Por favor adicione um nome.");
