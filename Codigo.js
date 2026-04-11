@@ -95,9 +95,9 @@ function buscarEmpresa(userId) {
 }
 
 function salvarCliente(userId, dados) {
-  const sheet = getSheet('Cliente', ['ID_Usuario', 'ID_Cliente', 'Nome', 'Telefone', 'CEP', 'Endereco']);
+  const sheet = getSheet('Cliente', ['ID_Usuario', 'ID_Cliente', 'Nome', 'Telefone', 'CEP', 'Endereco', 'Email']);
   const idCliente = "CLI-" + new Date().getTime();
-  sheet.appendRow([userId, idCliente, dados.nome, dados.tel, dados.cep, dados.end]);
+  sheet.appendRow([userId, idCliente, dados.nome, dados.tel, dados.cep, dados.end, dados.email || '']);
   return { success: true, id: idCliente };
 }
 
@@ -105,7 +105,7 @@ function listarClientes(userId) {
   const sheet = getSheet('Cliente');
   if (sheet.getLastRow() < 2) return [];
   const data = sheet.getDataRange().getValues();
-  return data.filter(r => r[0] === userId).map(r => ({ id: r[1], nome: r[2], tel: r[3], cep: r[4], end: r[5] }));
+  return data.filter(r => r[0] === userId).map(r => ({ id: r[1], nome: r[2], tel: r[3], cep: r[4], end: r[5], email: r[6] || '' }));
 }
 
 function listarOrcamentos(userId) {

@@ -174,8 +174,9 @@
              <input type="text" id="cli-nome" placeholder="Nome do Cliente" class="input-glass p-3 rounded-lg">
              <input type="text" id="cli-tel" placeholder="Telefone/WhatsApp" class="input-glass p-3 rounded-lg">
            </div>
-           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-             <input type="text" id="cli-cep" placeholder="CEP" class="input-glass p-3 rounded-lg">
+           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+             <input type="email" id="cli-email" placeholder="E-mail" class="input-glass p-3 rounded-lg">
+             <input type="text" id="cli-cep" placeholder="CEP" class="input-glass p-3 rounded-lg" onblur="UI.fetchCEP()">
              <input type="text" id="cli-end" placeholder="Endereço Completo" class="input-glass p-3 rounded-lg">
            </div>
            <button onclick="UI.saveCliente()" id="btn-save-cli" class="btn-primary w-full py-3 rounded-xl mt-6 text-sm font-bold">SALVAR NOVO CLIENTE</button>
@@ -184,7 +185,7 @@
         <div class="glass p-8 rounded-2xl">
           <h2 class="text-xl font-bold mb-6 text-yellow-400">Meus Clientes</h2>
           <table class="w-full text-left">
-            <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Nome</th><th class="pb-3">Telefone</th><th class="pb-3">Endereço</th></tr></thead>
+            <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Nome</th><th class="pb-3">Contato</th><th class="pb-3">Endereço</th></tr></thead>
             <tbody id="lista-clientes">
               <tr><td colspan="3" class="py-4 text-center text-slate-500">Carregando lista de clientes...</td></tr>
             </tbody>
@@ -196,16 +197,33 @@
         if(!list || list.length === 0) {
             h = '<tr><td colspan="3" class="py-4 text-center text-slate-500">Nenhum cliente cadastrado ainda.</td></tr>';
         } else {
-            h = list.map(c => `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 font-semibold text-white">${c.nome}</td><td class="py-4 text-slate-400">${c.tel}</td><td class="py-4 text-slate-400">${c.end}</td></tr>`).join('');
+            h = list.map(c => {
+                const contato = c.tel + (c.email ? '<br><span class="text-xs text-blue-400">' + c.email + '</span>' : '');
+                return `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 font-semibold text-white">${c.nome}</td><td class="py-4 text-slate-400">${contato}</td><td class="py-4 text-slate-400">${c.end}</td></tr>`
+            }).join('');
         }
         document.getElementById('lista-clientes').innerHTML = h;
       }).listarClientes(App.state.user.id);
+    },
+
+    fetchCEP: async () => {
+      let cep = document.getElementById('cli-cep').value.replace(/\D/g, '');
+      if(cep.length === 8) {
+         try {
+             let res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+             let data = await res.json();
+             if(!data.erro) {
+                 document.getElementById('cli-end').value = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`;
+             }
+         } catch(e) { console.error("Erro no viacep"); }
+      }
     },
 
     saveCliente: () => {
       const dados = {
         nome: document.getElementById('cli-nome').value,
         tel: document.getElementById('cli-tel').value,
+        email: document.getElementById('cli-email').value,
         cep: document.getElementById('cli-cep').value,
         end: document.getElementById('cli-end').value
       };
