@@ -1,0 +1,94 @@
+:root {
+  --primary: #fbbf24;
+  --primary-dark: #f59e0b;
+  --slate-900-glass: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: radial-gradient(circle at top right, #1e293b, #020617);
+}
+
+.glass {
+  background: var(--slate-900-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #020617;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(251, 191, 36, 0.3);
+}
+
+.input-glass {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: border-color 0.3s;
+}
+
+.input-glass:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Tab transitions */
+.nav-tab {
+  position: relative;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.3s;
+}
+.nav-tab.active {
+  color: var(--primary);
+}
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
+}
+/* Fix: texto visível em selects e inputs desabilitados */
+select.input-glass {
+  color: white;
+  -webkit-text-fill-color: white;
+}
+select.input-glass option {
+  background: #1e293b;
+  color: white;
+}
+input:disabled, input[disabled] {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
