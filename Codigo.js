@@ -108,6 +108,30 @@ function listarClientes(userId) {
   return data.filter(r => r[0] === userId).map(r => ({ id: r[1], nome: r[2], tel: r[3], cep: r[4], end: r[5], email: r[6] || '' }));
 }
 
+function excluirCliente(userId, idCliente) {
+  const sheet = getSheet('Cliente');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === userId && data[i][1] === idCliente) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, message: "Cliente não encontrado" };
+}
+
+function atualizarCliente(userId, idCliente, dados) {
+  const sheet = getSheet('Cliente');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === userId && data[i][1] === idCliente) {
+      sheet.getRange(i + 1, 3, 1, 5).setValues([[dados.nome, dados.tel, dados.cep, dados.end, dados.email || '']]);
+      return { success: true };
+    }
+  }
+  return { success: false, message: "Cliente não encontrado" };
+}
+
 function listarOrcamentos(userId) {
   const sheet = getSheet('Orcamentos');
   if (sheet.getLastRow() < 2) return [];

@@ -5,9 +5,10 @@
   const App = {
     state: {
       isLoggedIn: false,
-      user: null, // { id, nome }
+      user: null, 
       activeTab: 'empresa',
-      catalogos: null // { modulos, inversores, hsp, financeiro }
+      catalogos: null,
+      clientes: [] // Cache global de clientes
     },
 
     init: () => {
@@ -16,7 +17,7 @@
         App.state.user = JSON.parse(savedUser);
         App.state.isLoggedIn = true;
         Router.render('dashboard');
-        Data.loadCatalogs(); // Pré-carrega catálogos
+        Data.loadCatalogs();
       } else {
         Router.render('auth');
         document.getElementById('loader').classList.add('hidden');
@@ -32,11 +33,18 @@
           App.state.catalogos = cat;
           document.getElementById('loader').classList.add('hidden');
           document.getElementById('main-content').classList.remove('hidden');
-          
-          // Se estiver na aba Sizing, re-renderiza para preencher as boxes
           if(App.state.activeTab === 'sizing') UI.renderSizing();
         })
         .getCatalogos();
+
+      Data.loadClientes(); // Puxa e faz cache da lista de clientes 
+    },
+    loadClientes: (callback) => {
+      google.script.run
+        .withSuccessHandler(list => {
+           App.state.clientes = list || [];
+           if (callback) callback();
+        }).listarClientes(App.state.user.id);
     }
   };
 
@@ -169,7 +177,9 @@
     renderClientes: () => { 
       document.getElementById('tab-content').innerHTML = `
         <div class="glass p-8 rounded-2xl mb-8">
-           <h2 class="text-xl font-bold mb-6 text-yellow-400">Cadastrar Novo Cliente</h2>
+           <h2 class="text-xl font-bold mb-6 text-yellow-400">Cadastrar/Editar Cliente</h2>
+           
+           <input type="hidden" id="cli-id" value="">
            
            <div class="space-y-6">
              <!-- Seção de Contato -->
@@ -178,17 +188,17 @@
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div class="flex flex-col">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NOME COMPLETO</label>
-                     <input type="text" id="cli-nome" placeholder="Ex: João da Silva" class="input-glass p-3 rounded-lg">
+                     <input type="text" id="cli-nome" placeholder="Ex: João da Silva" class="input-glass p-3 rounded-lg text-white">
                    </div>
                    <div class="flex flex-col">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">E-MAIL</label>
-                     <input type="email" id="cli-email" placeholder="email@cliente.com" class="input-glass p-3 rounded-lg">
+                     <input type="email" id="cli-email" placeholder="email@cliente.com" class="input-glass p-3 rounded-lg text-white">
                    </div>
                  </div>
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                    <div class="flex flex-col">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">WHATSAPP / TELEFONE</label>
-                     <input type="text" id="cli-tel" placeholder="(43) 99999-9999" class="input-glass p-3 rounded-lg">
+                     <input type="text" id="cli-tel" placeholder="(43) 99999-9999" class="input-glass p-3 rounded-lg text-white">
                    </div>
                  </div>
              </div>
@@ -206,56 +216,113 @@
                  <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
                    <div class="flex flex-col md:col-span-9">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">RUA / LOGRADOURO</label>
-                     <input type="text" id="cli-rua" placeholder="Nome da Rua" class="input-glass p-3 rounded-lg">
+                     <input type="text" id="cli-rua" placeholder="Nome da Rua" class="input-glass p-3 rounded-lg text-white">
                    </div>
                    <div class="flex flex-col md:col-span-3">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NÚMERO</label>
-                     <input type="text" id="cli-num" placeholder="Ex: 123" class="input-glass p-3 rounded-lg">
+                     <input type="text" id="cli-num" placeholder="Ex: 123" class="input-glass p-3 rounded-lg text-white">
                    </div>
                  </div>
 
                  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
                    <div class="flex flex-col md:col-span-4">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">BAIRRO</label>
-                     <input type="text" id="cli-bairro" placeholder="Bairro" class="input-glass p-3 rounded-lg">
+                     <input type="text" id="cli-bairro" placeholder="Bairro" class="input-glass p-3 rounded-lg text-white">
                    </div>
                    <div class="flex flex-col md:col-span-6">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">CIDADE</label>
-                     <input type="text" id="cli-cidade" placeholder="Cidade" class="input-glass p-3 rounded-lg">
+                     <input type="text" id="cli-cidade" placeholder="Cidade" class="input-glass p-3 rounded-lg text-white">
                    </div>
                    <div class="flex flex-col md:col-span-2">
                      <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">UF</label>
-                     <input type="text" id="cli-uf" placeholder="PR" class="input-glass p-3 rounded-lg">
+                     <input type="text" id="cli-uf" placeholder="PR" class="input-glass p-3 rounded-lg text-white">
                    </div>
                  </div>
              </div>
              
-             <button onclick="UI.saveCliente()" id="btn-save-cli" class="btn-primary w-full py-4 rounded-xl mt-8 text-sm font-bold shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 transition-all transition-duration-300">SALVAR NOVO CLIENTE</button>
+             <div class="flex space-x-4">
+                <button onclick="UI.saveCliente()" id="btn-save-cli" class="btn-primary flex-1 py-4 rounded-xl mt-8 text-sm font-bold shadow-yellow-500/20">SALVAR CLIENTE</button>
+                <button onclick="UI.limparFormCliente()" class="btn-secondary py-4 px-6 rounded-xl mt-8 text-sm font-bold">LIMPAR / NOVO</button>
+             </div>
+             
            </div>
         </div>
 
         <div class="glass p-8 rounded-2xl">
-          <h2 class="text-xl font-bold mb-6 text-yellow-400">Meus Clientes</h2>
+          <h2 class="text-xl font-bold mb-6 text-yellow-400">Meus Clientes Cadastrados</h2>
           <table class="w-full text-left">
-            <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Nome</th><th class="pb-3">Contato</th><th class="pb-3">Endereço</th></tr></thead>
+            <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Nome</th><th class="pb-3">Contato</th><th class="pb-3">Endereço</th><th class="pb-3">Ações</th></tr></thead>
             <tbody id="lista-clientes">
-              <tr><td colspan="3" class="py-4 text-center text-slate-500">Carregando lista de clientes...</td></tr>
+              <tr><td colspan="4" class="py-4 text-center text-slate-500">Carregando lista de clientes...</td></tr>
             </tbody>
           </table>
         </div>
       `;
-      google.script.run.withSuccessHandler(list => {
+      Data.loadClientes(() => {
         let h = "";
+        const list = App.state.clientes;
         if(!list || list.length === 0) {
-            h = '<tr><td colspan="3" class="py-4 text-center text-slate-500">Nenhum cliente cadastrado ainda.</td></tr>';
+            h = '<tr><td colspan="4" class="py-4 text-center text-slate-500">Nenhum cliente cadastrado ainda.</td></tr>';
         } else {
             h = list.map(c => {
                 const contato = c.tel + (c.email ? '<br><span class="text-xs text-blue-400">' + c.email + '</span>' : '');
-                return `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 font-semibold text-white">${c.nome}</td><td class="py-4 text-slate-400">${contato}</td><td class="py-4 text-slate-400">${c.end}</td></tr>`
+                const acoes = `<button onclick="UI.editCliente('${c.id}')" class="text-xs mr-3 text-blue-400 hover:text-blue-300 uppercase font-bold tracking-wider">Editar</button><button onclick="UI.deleteCliente('${c.id}')" class="text-xs text-red-500 hover:text-red-400 uppercase font-bold tracking-wider">Deletar</button>`;
+                return `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 font-semibold text-white">${c.nome}</td><td class="py-4 text-slate-400">${contato}</td><td class="py-4 text-slate-400 max-w-xs truncate" title="${c.end}">${c.end}</td><td class="py-4">${acoes}</td></tr>`
             }).join('');
         }
         document.getElementById('lista-clientes').innerHTML = h;
-      }).listarClientes(App.state.user.id);
+      });
+    },
+
+    limparFormCliente: () => {
+      document.getElementById('cli-id').value = '';
+      document.getElementById('cli-nome').value = '';
+      document.getElementById('cli-email').value = '';
+      document.getElementById('cli-tel').value = '';
+      document.getElementById('cli-cep').value = '';
+      document.getElementById('cli-rua').value = '';
+      document.getElementById('cli-num').value = '';
+      document.getElementById('cli-bairro').value = '';
+      document.getElementById('cli-cidade').value = '';
+      document.getElementById('cli-uf').value = '';
+      document.getElementById('btn-save-cli').innerText = "SALVAR NOVO CLIENTE";
+    },
+
+    editCliente: (id) => {
+      const cli = App.state.clientes.find(c => c.id === id);
+      if(!cli) return;
+      document.getElementById('cli-id').value = cli.id;
+      document.getElementById('cli-nome').value = cli.nome || '';
+      document.getElementById('cli-email').value = cli.email || '';
+      document.getElementById('cli-tel').value = cli.tel || '';
+      document.getElementById('cli-cep').value = cli.cep || '';
+      
+      // Tenta quebrar o endereço (Rua, num - bairro, cidade - UF)
+      try {
+        const pedacosEnd = cli.end.split(' - ');
+        const ruaNum = pedacosEnd[0].split(', ');
+        const bairroCidade = pedacosEnd[1].split(', ');
+        
+        document.getElementById('cli-rua').value = ruaNum[0] || '';
+        document.getElementById('cli-num').value = ruaNum[1] || '';
+        document.getElementById('cli-bairro').value = bairroCidade[0] || '';
+        document.getElementById('cli-cidade').value = bairroCidade[1] || '';
+        document.getElementById('cli-uf').value = pedacosEnd[2] || '';
+      } catch(e) {
+        // Fallback em caso de sujeira nos dados antigos
+        document.getElementById('cli-rua').value = cli.end;
+      }
+      
+      document.getElementById('btn-save-cli').innerText = "ATUALIZAR CLIENTE";
+      window.scrollTo(0,0);
+    },
+
+    deleteCliente: (id) => {
+      if(!confirm("Tem certeza que deseja excluir esse cliente defitivamente?")) return;
+      document.getElementById('tab-content').innerHTML = `<div class="p-12 text-center text-red-500">Excluindo...</div>`;
+      google.script.run.withSuccessHandler(res => {
+         Data.loadClientes(() => UI.renderClientes());
+      }).excluirCliente(App.state.user.id, id);
     },
 
     fetchCEP: async () => {
@@ -276,6 +343,7 @@
     },
 
     saveCliente: () => {
+      const id = document.getElementById('cli-id').value;
       const rua = document.getElementById('cli-rua').value;
       const num = document.getElementById('cli-num').value;
       const bairro = document.getElementById('cli-bairro').value;
@@ -298,34 +366,76 @@
       btn.innerText = "Salvando...";
       btn.disabled = true;
 
-      google.script.run.withSuccessHandler(res => {
-         if(res.success) {
-            UI.renderClientes(); // recarrega a tela depois de salvar
-         }
-      }).salvarCliente(App.state.user.id, dados);
+      const handler = res => {
+          Data.loadClientes(() => UI.renderClientes());
+      };
+
+      if(id) {
+         google.script.run.withSuccessHandler(handler).atualizarCliente(App.state.user.id, id, dados);
+      } else {
+         google.script.run.withSuccessHandler(handler).salvarCliente(App.state.user.id, dados);
+      }
+    },
+
+    populateSizingClient: () => {
+      const id = document.getElementById('prop-cliente-select').value;
+      if(!id) {
+         document.getElementById('prop-cliente-nome').value = '';
+         document.getElementById('prop-cliente-end').value = '';
+         return;
+      }
+      const cli = App.state.clientes.find(c => c.id === id);
+      if(cli) {
+         document.getElementById('prop-cliente-nome').value = cli.nome;
+         document.getElementById('prop-cliente-end').value = cli.end;
+      }
     },
 
     renderSizing: () => {
-      if(!App.state.catalogos) return; // Wait for cat
+      if(!App.state.catalogos) return; 
       const cat = App.state.catalogos;
       
-      const optUF = cat.hsp.map(x => `<option value="${x.UF}|${x.HSP_Media_Diaria}">${x.UF} (HSP: ${x.HSP_Media_Diaria})</option>`).join('');
+      // HSP com Fallback pros 27 Estados do Brasil
+      let hspList = cat.hsp;
+      if(!hspList || hspList.length === 0) {
+        hspList = [
+          {UF:'AC', HSP_Media_Diaria: 4.5}, {UF:'AL', HSP_Media_Diaria: 5.4}, {UF:'AP', HSP_Media_Diaria: 4.5},
+          {UF:'AM', HSP_Media_Diaria: 4.5}, {UF:'BA', HSP_Media_Diaria: 5.3}, {UF:'CE', HSP_Media_Diaria: 5.5},
+          {UF:'DF', HSP_Media_Diaria: 5.2}, {UF:'ES', HSP_Media_Diaria: 4.8}, {UF:'GO', HSP_Media_Diaria: 5.1},
+          {UF:'MA', HSP_Media_Diaria: 5.2}, {UF:'MT', HSP_Media_Diaria: 5.1}, {UF:'MS', HSP_Media_Diaria: 5.0},
+          {UF:'MG', HSP_Media_Diaria: 5.2}, {UF:'PA', HSP_Media_Diaria: 4.7}, {UF:'PB', HSP_Media_Diaria: 5.5},
+          {UF:'PR', HSP_Media_Diaria: 4.4}, {UF:'PE', HSP_Media_Diaria: 5.5}, {UF:'PI', HSP_Media_Diaria: 5.4},
+          {UF:'RJ', HSP_Media_Diaria: 4.7}, {UF:'RN', HSP_Media_Diaria: 5.5}, {UF:'RS', HSP_Media_Diaria: 4.3},
+          {UF:'RO', HSP_Media_Diaria: 4.6}, {UF:'RR', HSP_Media_Diaria: 4.5}, {UF:'SC', HSP_Media_Diaria: 4.3},
+          {UF:'SP', HSP_Media_Diaria: 4.6}, {UF:'SE', HSP_Media_Diaria: 5.3}, {UF:'TO', HSP_Media_Diaria: 5.2}
+        ];
+      }
+      
+      const optUF = hspList.map(x => `<option value="${x.UF}|${x.HSP_Media_Diaria}">${x.UF} (HSP médio: ${x.HSP_Media_Diaria})</option>`).join('');
       const optMod = cat.modulos.map((x,i) => `<option value="${i}">${x.Fabricante} ${x.Modelo} - ${x.Potencia_W}w (R$ ${x.Preco_Custo})</option>`).join('');
       const optInv = cat.inversores.map((x,i) => `<option value="${i}">${x.Fabricante} ${x.Modelo} - ${x.Potencia_KW}kW (R$ ${x.Preco_Custo})</option>`).join('');
 
+      let optClientes = '<option value="">Selecione um cliente cadastrado...</option>';
+      if(App.state.clientes && App.state.clientes.length > 0) {
+          optClientes += App.state.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+      }
+
       document.getElementById('tab-content').innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8" id="sizing-area">
           <div class="lg:col-span-2 space-y-8">
             <div class="glass p-8 rounded-2xl">
-               <h2 class="text-xl font-bold mb-6 text-yellow-400">Projeto & Cliente Rápido</h2>
+               <h2 class="text-xl font-bold mb-6 text-yellow-400">Atribuir a um Cliente</h2>
+               <select id="prop-cliente-select" class="input-glass p-4 rounded-xl w-full text-white font-semibold mb-4" onchange="UI.populateSizingClient()">
+                 ${optClientes}
+               </select>
                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <input type="text" id="prop-cliente-nome" placeholder="Nome do Cliente" class="input-glass p-3 rounded-lg">
-                 <input type="text" id="prop-cliente-end" placeholder="Endereço (Cidade/UF)" class="input-glass p-3 rounded-lg">
+                 <input type="text" id="prop-cliente-nome" placeholder="Nome vai aparecer aqui" class="input-glass p-3 rounded-lg opacity-50 cursor-not-allowed" disabled>
+                 <input type="text" id="prop-cliente-end" placeholder="Endereço vai aparecer aqui" class="input-glass p-3 rounded-lg opacity-50 cursor-not-allowed" disabled>
                </div>
             </div>
 
             <div class="glass p-8 rounded-2xl">
-              <h2 class="text-xl font-bold mb-6 text-yellow-400">Dimencionamento</h2>
+              <h2 class="text-xl font-bold mb-6 text-yellow-400">Dimensionamento</h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Consumo Médio (kWh/mês)</label>
@@ -334,7 +444,7 @@
                 <div>
                   <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Estado (Radiação)</label>
                   <select id="calc-uf" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()">
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione a Região...</option>
                     ${optUF}
                   </select>
                 </div>
@@ -344,26 +454,26 @@
             <div class="glass p-8 rounded-2xl">
               <h2 class="text-xl font-bold mb-6 text-yellow-400">Equipamentos</h2>
               <div class="space-y-4">
-                <select id="calc-mod" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Módulo...</option>${optMod}</select>
-                <select id="calc-inv" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Inversor...</option>${optInv}</select>
+                <select id="calc-mod" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Selecione o Módulo Solar...</option>${optMod}</select>
+                <select id="calc-inv" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Selecione o Inversor Solar...</option>${optInv}</select>
               </div>
             </div>
           </div>
 
           <!-- Resumo Financeiro & Tecnico -->
           <div class="glass p-8 rounded-2xl sticky top-24 self-start">
-            <h3 class="text-lg font-bold mb-4 uppercase text-slate-400">Resumo</h3>
+            <h3 class="text-lg font-bold mb-4 uppercase text-slate-400">Resumo da Calculadora</h3>
             <div class="space-y-6">
               <div>
                 <p class="text-xs uppercase font-bold text-slate-500">Potência Requerida</p>
                 <div class="text-4xl font-bold text-yellow-400"><span id="res-kwp">0.00</span> <span class="text-sm">kWp</span></div>
               </div>
               <div class="p-4 bg-white/5 rounded-xl space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-slate-400">Qtd. Módulos:</span><span id="res-mod-qty" class="font-bold">0</span></div>
-                <div class="flex justify-between"><span class="text-slate-400">Investimento Total:</span><span id="res-val" class="text-green-400 font-bold">R$ 0,00</span></div>
-                <div class="flex justify-between"><span class="text-slate-400">Payback Aprox.:</span><span id="res-payback" class="text-blue-400 font-bold">0 Anos</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Qtd. Módulos calculada:</span><span id="res-mod-qty" class="font-bold text-white">0</span></div>
+                <div class="flex justify-between mt-2 pt-2 border-t border-white/10"><span class="text-slate-400">Investimento Total (Venda):</span><span id="res-val" class="text-green-400 font-bold text-lg">R$ 0,00</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Payback Estimado:</span><span id="res-payback" class="text-blue-400 font-bold">0 Anos</span></div>
               </div>
-              <button onclick="Calc.gerarProposta()" id="btn-proposta" class="btn-primary w-full py-4 rounded-xl">GERAR PDF COMERCIAL</button>
+              <button onclick="Calc.gerarProposta()" id="btn-proposta" class="btn-primary w-full py-4 rounded-xl shadow-lg mt-4 shadow-yellow-500/20">GERAR PDF COMERCIAL</button>
             </div>
           </div>
         </div>
@@ -381,7 +491,7 @@
         </div>
       `;
       google.script.run.withSuccessHandler(list => {
-        document.getElementById('lista-orca').innerHTML = list.map(o => `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 text-slate-400">${o.data}</td><td class="py-4 font-bold text-white">${o.cliente}</td><td class="py-4 text-green-400">${o.valor}</td><td class="py-4"><a href="${o.url}" target="_blank" class="text-yellow-400 hover:underline">Ver PDF</a></td></tr>`).join('');
+        document.getElementById('lista-orca').innerHTML = list.map(o => `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 text-slate-400">${o.data}</td><td class="py-4 font-bold text-white">${o.cliente}</td><td class="py-4 text-green-400">${o.valor}</td><td class="py-4"><a href="${o.url}" target="_blank" class="text-yellow-400 font-bold hover:underline">Ver PDF</a></td></tr>`).join('');
       }).listarOrcamentos(App.state.user.id);
     }
   };
@@ -398,9 +508,8 @@
 
       if(kwh && ufData) {
         const hsp = parseFloat(ufData.split('|')[1]);
-        const ef = 0.80; // Eficiência fixa de 80% do sistema
+        const ef = 0.80; 
         
-        // kWh/mês / 30 = kWh/dia. | kWp = kWh_dia / (HSP * Eficiencia)
         const kwpCalculado = (kwh / 30) / (hsp * ef);
         document.getElementById('res-kwp').innerText = kwpCalculado.toFixed(2);
         
@@ -408,7 +517,6 @@
         Calc.dadosAuais.kwp = kwpCalculado.toFixed(2);
         Calc.dadosAuais.economiaAnual = "R$ " + (kwh * (cat.financeiro.Tarifa_KWH || 0.95) * 12).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 
-        // Se o usuario selecionou modulo, calcula qtd
         let custoTotalMaterial = 0;
         if(modIdx !== "") {
           const modInfo = cat.modulos[modIdx];
@@ -428,14 +536,11 @@
           Calc.dadosAuais.inversorStr = invInfo.Fabricante + " " + invInfo.Modelo;
         }
 
-        // Calculo Financeiro
         if(modIdx !== "" && invIdx !== "") {
-          const p = cat.financeiro;
-          // Custo = Módulos + Inversor + (Mao de Obra * KwP)
+          const p = cat.financeiro || {};
           const maoDeObra = (p.Custo_Mao_Obra_KWP || 500) * kwpCalculado;
           const custoBruto = custoTotalMaterial + maoDeObra;
           
-          // Preço Final = CustoBruto * (1 + Margem) * (1 + Imposto)
           const margem = (p.Margem_Lucro_Percent || 0) / 100;
           const impostos = (p.Impostos_Percent || 0) / 100;
           const valorVenda = custoBruto * (1 + margem) * (1 + impostos);
@@ -444,7 +549,6 @@
           Calc.dadosAuais.valorFormatado = "R$ " + valorVenda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
           Calc.dadosAuais.valorNum = valorVenda;
 
-          // Payback Simples: Valor / Economia Anual
           const eko = kwh * (p.Tarifa_KWH || 0.95) * 12;
           const pbk = valorVenda / eko;
           document.getElementById('res-payback').innerText = pbk.toFixed(1) + " Anos";
@@ -455,12 +559,13 @@
 
     gerarProposta: () => {
       const cNome = document.getElementById('prop-cliente-nome').value;
-      if(!cNome) return alert("Por favor, informe o Nome do Cliente");
-      if(!Calc.dadosAuais.valorNum) return alert("Selecione os equipamentos para calcular o valor.");
+      if(!cNome) return alert("Selecione um cliente na lista primeiro para que o nome e endereço apareçam no PDF.");
+      if(!Calc.dadosAuais.valorNum) return alert("Selecione todos os equipamentos da lista e digite um consumo para gerar a matemática financeira.");
 
       const btn = document.getElementById('btn-proposta');
-      btn.innerText = "GERANDO PDF (Aguarde...)";
-      btn.style.opacity = "0.5";
+      btn.innerText = "GERANDO PDF NO DRIVE E SALVANDO (Aguarde...)";
+      btn.classList.add('opacity-50');
+      btn.style.cursor = "not-allowed";
 
       Calc.dadosAuais.cliente = {
         nome: cNome,
@@ -470,11 +575,12 @@
       google.script.run
         .withSuccessHandler(res => {
           btn.innerText = "GERAR PDF COMERCIAL";
-          btn.style.opacity = "1";
+          btn.classList.remove('opacity-50');
+          btn.style.cursor = "pointer";
           if(res.success) {
-            alert("Orçamento gerado e salvo com sucesso!");
+            alert("Sucesso absoluto! PDF gerado e salvo na sua aba de Orçamentos.");
             window.open(res.url, "_blank");
-            Router.to('orcamentos'); // redireciona
+            Router.to('orcamentos'); 
           } else {
             alert(res.message);
           }
