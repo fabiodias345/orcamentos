@@ -1,0 +1,14 @@
+<div class="glass p-8 rounded-2xl">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div>
+      <h2 class="text-2xl font-bold text-yellow-400">Base de Clientes</h2>
+      <p class="text-sm text-slate-400">Total de clientes cadastrados por você.</p>
+    </div>
+    <button onclick="UI.showNewClientModal()" class="btn-primary px-8 py-3 rounded-xl shadow-xl">+ CADASTRAR CLIENTE</button>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="lista-clientes">
+    <!-- Cards de Clientes aqui via JS -->
+    <div class="p-12 text-center text-slate-500 col-span-full">Carregando seus clientes...</div>
+  </div>
+</div>

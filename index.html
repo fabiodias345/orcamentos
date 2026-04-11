@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar PRO - Orçamentos</title>
+  
+  <!-- Fontes Google -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <?!= include('GlobalStyles'); ?>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <div id="app-container">
+    <!-- Componente de Carregamento -->
+    <div id="loader" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center">
+      <div class="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+      <p class="mt-4 text-slate-400 font-medium tracking-widest">CARREGANDO SOLAR PRO...</p>
+    </div>
+
+    <!-- Conteúdo Dinâmico -->
+    <div id="main-content" class="hidden">
+      <!-- Injetado via JS -->
+    </div>
+  </div>
+
+  <!-- Componentes Injetados -->
+  <script type="text/html" id="tpl-auth">
+    <?!= include('Auth'); ?>
+  </script>
+  <script type="text/html" id="tpl-dashboard">
+    <?!= include('Dashboard'); ?>
+  </script>
+
+  <?!= include('GlobalScripts'); ?>
+
+  <script>
+    // Inicialização do App
+    window.addEventListener('load', () => {
+      App.init();
+    });
+  </script>
+</body>
+</html>
