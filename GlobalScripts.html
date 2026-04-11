@@ -282,18 +282,25 @@
     renderSizing: () => {
       if (!App.state.catalogos) return;
 
-      // 27 Estados do Brasil com HSP médio
+      // 27 Estados do Brasil com HSP médio e nome completo
       const hspList = [
-        {UF:'AC',HSP:4.5},{UF:'AL',HSP:5.4},{UF:'AP',HSP:4.5},{UF:'AM',HSP:4.5},
-        {UF:'BA',HSP:5.3},{UF:'CE',HSP:5.5},{UF:'DF',HSP:5.2},{UF:'ES',HSP:4.8},
-        {UF:'GO',HSP:5.1},{UF:'MA',HSP:5.2},{UF:'MT',HSP:5.1},{UF:'MS',HSP:5.0},
-        {UF:'MG',HSP:5.2},{UF:'PA',HSP:4.7},{UF:'PB',HSP:5.5},{UF:'PR',HSP:4.4},
-        {UF:'PE',HSP:5.5},{UF:'PI',HSP:5.4},{UF:'RJ',HSP:4.7},{UF:'RN',HSP:5.5},
-        {UF:'RS',HSP:4.3},{UF:'RO',HSP:4.6},{UF:'RR',HSP:4.5},{UF:'SC',HSP:4.3},
-        {UF:'SP',HSP:4.6},{UF:'SE',HSP:5.3},{UF:'TO',HSP:5.2}
+        {UF:'AC',nome:'Acre',HSP:4.5},{UF:'AL',nome:'Alagoas',HSP:5.4},
+        {UF:'AP',nome:'Amapá',HSP:4.5},{UF:'AM',nome:'Amazonas',HSP:4.5},
+        {UF:'BA',nome:'Bahia',HSP:5.3},{UF:'CE',nome:'Ceará',HSP:5.5},
+        {UF:'DF',nome:'Distrito Federal',HSP:5.2},{UF:'ES',nome:'Espírito Santo',HSP:4.8},
+        {UF:'GO',nome:'Goiás',HSP:5.1},{UF:'MA',nome:'Maranhão',HSP:5.2},
+        {UF:'MT',nome:'Mato Grosso',HSP:5.1},{UF:'MS',nome:'Mato Grosso do Sul',HSP:5.0},
+        {UF:'MG',nome:'Minas Gerais',HSP:5.2},{UF:'PA',nome:'Pará',HSP:4.7},
+        {UF:'PB',nome:'Paraíba',HSP:5.5},{UF:'PR',nome:'Paraná',HSP:4.4},
+        {UF:'PE',nome:'Pernambuco',HSP:5.5},{UF:'PI',nome:'Piauí',HSP:5.4},
+        {UF:'RJ',nome:'Rio de Janeiro',HSP:4.7},{UF:'RN',nome:'Rio Grande do Norte',HSP:5.5},
+        {UF:'RS',nome:'Rio Grande do Sul',HSP:4.3},{UF:'RO',nome:'Rondônia',HSP:4.6},
+        {UF:'RR',nome:'Roraima',HSP:4.5},{UF:'SC',nome:'Santa Catarina',HSP:4.3},
+        {UF:'SP',nome:'São Paulo',HSP:4.6},{UF:'SE',nome:'Sergipe',HSP:5.3},
+        {UF:'TO',nome:'Tocantins',HSP:5.2}
       ];
 
-      const optUF = hspList.map(x => `<option value="${x.UF}|${x.HSP}">${x.UF} (HSP médio: ${x.HSP})</option>`).join('');
+      const optUF = hspList.map(x => `<option value="${x.UF}|${x.HSP}">${x.nome}</option>`).join('');
 
       let optClientes = '<option value="">Selecione um cliente cadastrado...</option>';
       if (App.state.clientes && App.state.clientes.length > 0) {
@@ -385,7 +392,7 @@
 
       if (kwh && ufData) {
         const hsp = parseFloat(ufData.split('|')[1]);
-        const ef = 0.80;
+        const ef = 0.83; // Eficiência N-type (painéis modernos)
         const kwpCalculado = (kwh / 30) / (hsp * ef);
         document.getElementById('res-kwp').innerText = kwpCalculado.toFixed(2);
         Calc.dadosAuais.kwh = kwh;
