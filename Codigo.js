@@ -83,7 +83,15 @@ function buscarEmpresa(userId) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === userId) return { nome: data[i][1], cnpj: data[i][2], tel: data[i][3], email: data[i][4], end: data[i][5], logo: data[i][6] };
   }
-  return null;
+  // Dados padrões fixos da empresa 
+  return { 
+    nome: 'ECCON ENGENHARIA E ASSESSORIA LTDA', 
+    cnpj: '00.508.968/0001-23', 
+    tel: '', 
+    email: '', 
+    end: 'Rua Gago Coutinho, 695, Londrina - PR, 86.039-170', 
+    logo: '' 
+  };
 }
 
 function salvarCliente(userId, dados) {
