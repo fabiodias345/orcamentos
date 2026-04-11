@@ -1,0 +1,64 @@
+<script>
+  /**
+   * AUTH ENGINE - Arquivo Isolado de Autenticação
+   * Mexer aqui NÃO afeta o Dashboard
+   */
+  const Auth = {
+    toggleMode: (mode) => {
+      document.getElementById('auth-login-box').classList.toggle('hidden', mode !== 'login');
+      document.getElementById('auth-signup-box').classList.toggle('hidden', mode !== 'signup');
+      document.getElementById('auth-subtitle').innerText = mode === 'login' ? 'Acesse sua conta' : 'Crie sua conta profissional';
+    },
+
+    handleLogin: () => {
+      const user = document.getElementById('login-user').value;
+      const pass = document.getElementById('login-pass').value;
+      if (!user || !pass) return Auth.msg('Preencha os campos', 'error');
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.success) {
+            App.state.user = { id: res.userId, nome: res.nome };
+            App.state.isLoggedIn = true;
+            localStorage.setItem('solar_pro_user', JSON.stringify(App.state.user));
+            Router.render('dashboard');
+            Data.loadCatalogs();
+          } else {
+            Auth.msg(res.message, 'error');
+          }
+        })
+        .login(user, pass);
+    },
+
+    handleSignup: () => {
+      const nome = document.getElementById('signup-name').value;
+      const user = document.getElementById('signup-user').value;
+      const pass = document.getElementById('signup-pass').value;
+      if (!nome || !user || !pass) return Auth.msg('Preencha tudo', 'error');
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.success) {
+            Auth.msg('Conta criada! Faça login.', 'success');
+            Auth.toggleMode('login');
+          } else {
+            Auth.msg(res.message, 'error');
+          }
+        })
+        .signup(nome, user, pass);
+    },
+
+    logout: () => {
+      localStorage.removeItem('solar_pro_user');
+      location.reload();
+    },
+
+    msg: (text, type) => {
+      const box = document.getElementById('auth-message');
+      if (!box) return;
+      box.innerText = text;
+      box.className = `mt-4 p-3 rounded-lg text-sm text-center ${type === 'error' ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`;
+      box.classList.remove('hidden');
+    }
+  };
+</script>
