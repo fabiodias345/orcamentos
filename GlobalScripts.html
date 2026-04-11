@@ -6,22 +6,37 @@
     state: {
       isLoggedIn: false,
       user: null, // { id, nome }
-      activeTab: 'empresa'
+      activeTab: 'empresa',
+      catalogos: null // { modulos, inversores, hsp, financeiro }
     },
 
     init: () => {
-      // Tenta recuperar sessão
       const savedUser = localStorage.getItem('solar_pro_user');
       if (savedUser) {
         App.state.user = JSON.parse(savedUser);
         App.state.isLoggedIn = true;
         Router.render('dashboard');
+        Data.loadCatalogs(); // Pré-carrega catálogos
       } else {
         Router.render('auth');
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('main-content').classList.remove('hidden');
       }
-      
-      document.getElementById('loader').classList.add('hidden');
-      document.getElementById('main-content').classList.remove('hidden');
+    }
+  };
+
+  const Data = {
+    loadCatalogs: () => {
+      google.script.run
+        .withSuccessHandler(cat => {
+          App.state.catalogos = cat;
+          document.getElementById('loader').classList.add('hidden');
+          document.getElementById('main-content').classList.remove('hidden');
+          
+          // Se estiver na aba Sizing, re-renderiza para preencher as boxes
+          if(App.state.activeTab === 'sizing') UI.renderSizing();
+        })
+        .getCatalogos();
     }
   };
 
@@ -40,7 +55,6 @@
     to: (tab) => {
       App.state.activeTab = tab;
       Router.renderTab(tab);
-      // Atualiza estado visual da navbar
       document.querySelectorAll('.nav-tab').forEach(el => {
         el.classList.remove('active');
         if (el.innerText.toLowerCase().includes(tab.substring(0,3))) el.classList.add('active');
@@ -50,9 +64,6 @@
     renderTab: (tab) => {
       const container = document.getElementById('tab-content');
       container.innerHTML = `<div class="p-12 text-center text-slate-500">Carregando ${tab}...</div>`;
-      
-      // Simulação de injeção de componente (Normalmente teríamos Tpl adicionais)
-      // Como estamos limitados a arquivos físicos no GAS, usaremos Switch
       switch(tab) {
         case 'empresa': UI.renderEmpresa(); break;
         case 'clientes': UI.renderClientes(); break;
@@ -81,6 +92,7 @@
             App.state.isLoggedIn = true;
             localStorage.setItem('solar_pro_user', JSON.stringify(App.state.user));
             Router.render('dashboard');
+            Data.loadCatalogs();
           } else {
             UI.msg(res.message, 'error');
           }
@@ -122,26 +134,23 @@
 
     renderEmpresa: () => {
       const container = document.getElementById('tab-content');
-      container.innerHTML = `
-        <div class="glass p-8 rounded-2xl max-w-2xl mx-auto">
-          <h2 class="text-2xl font-bold mb-6 text-yellow-400">Minha Empresa</h2>
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <input type="text" id="emp-nome" placeholder="Nome da Empresa" class="input-glass p-3 rounded-lg">
-              <input type="text" id="emp-cnpj" placeholder="CNPJ" class="input-glass p-3 rounded-lg">
-            </div>
-            <input type="text" id="emp-end" placeholder="Endereço Completo" class="input-glass p-3 rounded-lg w-full">
-            <button onclick="UI.saveEmpresa()" class="btn-primary w-full py-3 rounded-xl">SALVAR DADOS</button>
-          </div>
-        </div>
-      `;
-      // Carrega dados se existir
       google.script.run.withSuccessHandler(d => {
-        if(d){
-          document.getElementById('emp-nome').value = d.nome || '';
-          document.getElementById('emp-cnpj').value = d.cnpj || '';
-          document.getElementById('emp-end').value = d.end || '';
-        }
+        container.innerHTML = `
+          <div class="glass p-8 rounded-2xl max-w-2xl mx-auto animate-fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-yellow-400">Minha Empresa</h2>
+            <div class="space-y-4">
+              <input type="text" id="emp-nome" placeholder="Nome Comercial" class="input-glass p-3 rounded-lg w-full" value="${d?.nome||''}">
+              <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="emp-cnpj" placeholder="CNPJ" class="input-glass p-3 rounded-lg" value="${d?.cnpj||''}">
+                <input type="text" id="emp-tel" placeholder="Telefone" class="input-glass p-3 rounded-lg" value="${d?.tel||''}">
+              </div>
+              <input type="text" id="emp-email" placeholder="E-mail" class="input-glass p-3 rounded-lg w-full" value="${d?.email||''}">
+              <input type="text" id="emp-end" placeholder="Endereço Completo" class="input-glass p-3 rounded-lg w-full" value="${d?.end||''}">
+              <input type="text" id="emp-logo" placeholder="URL Extensa da Logomarca (Png/Jpg)" class="input-glass p-3 rounded-lg w-full" value="${d?.logo||''}">
+              <button onclick="UI.saveEmpresa()" class="btn-primary w-full py-3 rounded-xl mt-4">SALVAR MINHA EMPRESA</button>
+            </div>
+          </div>
+        `;
       }).buscarEmpresa(App.state.user.id);
     },
 
@@ -149,39 +158,207 @@
       const dados = {
         nome: document.getElementById('emp-nome').value,
         cnpj: document.getElementById('emp-cnpj').value,
-        end: document.getElementById('emp-end').value
+        tel: document.getElementById('emp-tel').value,
+        email: document.getElementById('emp-email').value,
+        end: document.getElementById('emp-end').value,
+        logo: document.getElementById('emp-logo').value
       };
-      google.script.run.withSuccessHandler(res => alert('Dados salvos!')).salvarEmpresa(App.state.user.id, dados);
+      google.script.run.withSuccessHandler(res => alert('Configurações Salvas!')).salvarEmpresa(App.state.user.id, dados);
     },
 
-    renderClientes: () => {
-      const container = document.getElementById('tab-content');
-      container.innerHTML = `
+    renderClientes: () => { /* Mantido básico para o demo */
+      document.getElementById('tab-content').innerHTML = `
         <div class="glass p-8 rounded-2xl">
           <div class="flex justify-between mb-8">
              <h2 class="text-2xl font-bold text-yellow-400">Gestão de Clientes</h2>
-             <button class="btn-primary px-6 py-2 rounded-xl text-sm" onclick="alert('Funcionalidade em desenvolvimento')">+ NOVO CLIENTE</button>
+             <button class="btn-primary px-6 py-2 rounded-xl text-sm" onclick="alert('Funcionalidade de inserção rápida em dev')">+ NOVO CLIENTE</button>
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left">
-              <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Nome</th><th class="pb-3">Telefone</th><th class="pb-3">Endereço</th></tr></thead>
-              <tbody id="lista-clientes"></tbody>
-            </table>
-          </div>
+          <table class="w-full text-left">
+            <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Nome</th><th class="pb-3">Telefone</th><th class="pb-3">Endereço</th></tr></thead>
+            <tbody id="lista-clientes"></tbody>
+          </table>
         </div>
       `;
       google.script.run.withSuccessHandler(list => {
-        const tbody = document.getElementById('lista-clientes');
-        tbody.innerHTML = list.map(c => `<tr class="border-b border-white/5 hover:bg-white/5 transition-colors"><td class="py-4 font-semibold">${c.nome}</td><td class="py-4 text-slate-400">${c.tel}</td><td class="py-4 text-slate-400">${c.end}</td></tr>`).join('');
+        document.getElementById('lista-clientes').innerHTML = list.map(c => `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 font-semibold">${c.nome}</td><td class="py-4 text-slate-400">${c.tel}</td><td class="py-4 text-slate-400">${c.end}</td></tr>`).join('');
       }).listarClientes(App.state.user.id);
     },
 
     renderSizing: () => {
-       document.getElementById('tab-content').innerHTML = `<div class="glass p-8 rounded-2xl text-center"><h2 class="text-2xl font-bold mb-4">Dimensionador Energético</h2><p class="text-slate-400">Escolha o consumo e gere o kWp...</p><div class="p-12 text-yellow-400 font-bold">EM BREVE: Integração com Catálogos</div></div>`;
+      if(!App.state.catalogos) return; // Wait for cat
+      const cat = App.state.catalogos;
+      
+      const optUF = cat.hsp.map(x => `<option value="${x.UF}|${x.HSP_Media_Diaria}">${x.UF} (HSP: ${x.HSP_Media_Diaria})</option>`).join('');
+      const optMod = cat.modulos.map((x,i) => `<option value="${i}">${x.Fabricante} ${x.Modelo} - ${x.Potencia_W}w (R$ ${x.Preco_Custo})</option>`).join('');
+      const optInv = cat.inversores.map((x,i) => `<option value="${i}">${x.Fabricante} ${x.Modelo} - ${x.Potencia_KW}kW (R$ ${x.Preco_Custo})</option>`).join('');
+
+      document.getElementById('tab-content').innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div class="lg:col-span-2 space-y-8">
+            <div class="glass p-8 rounded-2xl">
+               <h2 class="text-xl font-bold mb-6 text-yellow-400">Projeto & Cliente Rápido</h2>
+               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <input type="text" id="prop-cliente-nome" placeholder="Nome do Cliente" class="input-glass p-3 rounded-lg">
+                 <input type="text" id="prop-cliente-end" placeholder="Endereço (Cidade/UF)" class="input-glass p-3 rounded-lg">
+               </div>
+            </div>
+
+            <div class="glass p-8 rounded-2xl">
+              <h2 class="text-xl font-bold mb-6 text-yellow-400">Dimencionamento</h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Consumo Médio (kWh/mês)</label>
+                  <input type="number" id="calc-kwh" class="input-glass w-full p-4 rounded-xl text-2xl font-bold text-yellow-400" placeholder="600" oninput="Calc.update()">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Estado (Radiação)</label>
+                  <select id="calc-uf" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()">
+                    <option value="">Selecione...</option>
+                    ${optUF}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass p-8 rounded-2xl">
+              <h2 class="text-xl font-bold mb-6 text-yellow-400">Equipamentos</h2>
+              <div class="space-y-4">
+                <select id="calc-mod" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Módulo...</option>${optMod}</select>
+                <select id="calc-inv" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Inversor...</option>${optInv}</select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumo Financeiro & Tecnico -->
+          <div class="glass p-8 rounded-2xl sticky top-24 self-start">
+            <h3 class="text-lg font-bold mb-4 uppercase text-slate-400">Resumo</h3>
+            <div class="space-y-6">
+              <div>
+                <p class="text-xs uppercase font-bold text-slate-500">Potência Requerida</p>
+                <div class="text-4xl font-bold text-yellow-400"><span id="res-kwp">0.00</span> <span class="text-sm">kWp</span></div>
+              </div>
+              <div class="p-4 bg-white/5 rounded-xl space-y-2 text-sm">
+                <div class="flex justify-between"><span class="text-slate-400">Qtd. Módulos:</span><span id="res-mod-qty" class="font-bold">0</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Investimento Total:</span><span id="res-val" class="text-green-400 font-bold">R$ 0,00</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Payback Aprox.:</span><span id="res-payback" class="text-blue-400 font-bold">0 Anos</span></div>
+              </div>
+              <button onclick="Calc.gerarProposta()" id="btn-proposta" class="btn-primary w-full py-4 rounded-xl">GERAR PDF COMERCIAL</button>
+            </div>
+          </div>
+        </div>
+      `;
     },
 
     renderOrcamentos: () => {
-       document.getElementById('tab-content').innerHTML = `<div class="glass p-8 rounded-2xl text-center"><h2 class="text-2xl font-bold mb-4 text-slate-400">Histórico de Propostas</h2><p>Você ainda não gerou propostas.</p></div>`;
+      document.getElementById('tab-content').innerHTML = `
+        <div class="glass p-8 rounded-2xl">
+          <h2 class="text-2xl font-bold mb-6 text-yellow-400">Histórico de Propostas</h2>
+          <table class="w-full text-left">
+            <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Data</th><th class="pb-3">Cliente</th><th class="pb-3">Valor</th><th class="pb-3">PDF</th></tr></thead>
+            <tbody id="lista-orca"></tbody>
+          </table>
+        </div>
+      `;
+      google.script.run.withSuccessHandler(list => {
+        document.getElementById('lista-orca').innerHTML = list.map(o => `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 text-slate-400">${o.data}</td><td class="py-4 font-bold text-white">${o.cliente}</td><td class="py-4 text-green-400">${o.valor}</td><td class="py-4"><a href="${o.url}" target="_blank" class="text-yellow-400 hover:underline">Ver PDF</a></td></tr>`).join('');
+      }).listarOrcamentos(App.state.user.id);
+    }
+  };
+
+  const Calc = {
+    dadosAuais: {},
+
+    update: () => {
+      const cat = App.state.catalogos;
+      const kwh = parseFloat(document.getElementById('calc-kwh').value);
+      const ufData = document.getElementById('calc-uf').value;
+      const modIdx = document.getElementById('calc-mod').value;
+      const invIdx = document.getElementById('calc-inv').value;
+
+      if(kwh && ufData) {
+        const hsp = parseFloat(ufData.split('|')[1]);
+        const ef = 0.80; // Eficiência fixa de 80% do sistema
+        
+        // kWh/mês / 30 = kWh/dia. | kWp = kWh_dia / (HSP * Eficiencia)
+        const kwpCalculado = (kwh / 30) / (hsp * ef);
+        document.getElementById('res-kwp').innerText = kwpCalculado.toFixed(2);
+        
+        Calc.dadosAuais.kwh = kwh;
+        Calc.dadosAuais.kwp = kwpCalculado.toFixed(2);
+        Calc.dadosAuais.economiaAnual = "R$ " + (kwh * (cat.financeiro.Tarifa_KWH || 0.95) * 12).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+        // Se o usuario selecionou modulo, calcula qtd
+        let custoTotalMaterial = 0;
+        if(modIdx !== "") {
+          const modInfo = cat.modulos[modIdx];
+          const potW = modInfo.Potencia_W;
+          const qtd = Math.ceil((kwpCalculado * 1000) / potW);
+          document.getElementById('res-mod-qty').innerText = qtd;
+          custoTotalMaterial += (qtd * modInfo.Preco_Custo);
+          
+          Calc.dadosAuais.qtdPaineis = qtd;
+          Calc.dadosAuais.fabricanteModulo = modInfo.Fabricante;
+          Calc.dadosAuais.potenciaModulo = potW;
+        }
+
+        if(invIdx !== "") {
+          const invInfo = cat.inversores[invIdx];
+          custoTotalMaterial += invInfo.Preco_Custo;
+          Calc.dadosAuais.inversorStr = invInfo.Fabricante + " " + invInfo.Modelo;
+        }
+
+        // Calculo Financeiro
+        if(modIdx !== "" && invIdx !== "") {
+          const p = cat.financeiro;
+          // Custo = Módulos + Inversor + (Mao de Obra * KwP)
+          const maoDeObra = (p.Custo_Mao_Obra_KWP || 500) * kwpCalculado;
+          const custoBruto = custoTotalMaterial + maoDeObra;
+          
+          // Preço Final = CustoBruto * (1 + Margem) * (1 + Imposto)
+          const margem = (p.Margem_Lucro_Percent || 0) / 100;
+          const impostos = (p.Impostos_Percent || 0) / 100;
+          const valorVenda = custoBruto * (1 + margem) * (1 + impostos);
+          
+          document.getElementById('res-val').innerText = "R$ " + valorVenda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          Calc.dadosAuais.valorFormatado = "R$ " + valorVenda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          Calc.dadosAuais.valorNum = valorVenda;
+
+          // Payback Simples: Valor / Economia Anual
+          const eko = kwh * (p.Tarifa_KWH || 0.95) * 12;
+          const pbk = valorVenda / eko;
+          document.getElementById('res-payback').innerText = pbk.toFixed(1) + " Anos";
+          Calc.dadosAuais.payback = pbk.toFixed(1);
+        }
+      }
+    },
+
+    gerarProposta: () => {
+      const cNome = document.getElementById('prop-cliente-nome').value;
+      if(!cNome) return alert("Por favor, informe o Nome do Cliente");
+      if(!Calc.dadosAuais.valorNum) return alert("Selecione os equipamentos para calcular o valor.");
+
+      const btn = document.getElementById('btn-proposta');
+      btn.innerText = "GERANDO PDF (Aguarde...)";
+      btn.style.opacity = "0.5";
+
+      Calc.dadosAuais.cliente = {
+        nome: cNome,
+        endereco: document.getElementById('prop-cliente-end').value || ''
+      };
+
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.innerText = "GERAR PDF COMERCIAL";
+          btn.style.opacity = "1";
+          if(res.success) {
+            alert("Orçamento gerado e salvo com sucesso!");
+            window.open(res.url, "_blank");
+            Router.to('orcamentos'); // redireciona
+          } else {
+            alert(res.message);
+          }
+        })
+        .gerarProposta(App.state.user.id, Calc.dadosAuais);
     }
   };
 </script>
