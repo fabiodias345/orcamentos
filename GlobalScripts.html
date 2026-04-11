@@ -282,30 +282,46 @@
     renderSizing: () => {
       if (!App.state.catalogos) return;
 
-      // 27 Estados do Brasil com HSP médio e nome completo
-      const hspList = [
-        {UF:'AC',nome:'Acre',HSP:4.5},{UF:'AL',nome:'Alagoas',HSP:5.4},
-        {UF:'AP',nome:'Amapá',HSP:4.5},{UF:'AM',nome:'Amazonas',HSP:4.5},
-        {UF:'BA',nome:'Bahia',HSP:5.3},{UF:'CE',nome:'Ceará',HSP:5.5},
-        {UF:'DF',nome:'Distrito Federal',HSP:5.2},{UF:'ES',nome:'Espírito Santo',HSP:4.8},
-        {UF:'GO',nome:'Goiás',HSP:5.1},{UF:'MA',nome:'Maranhão',HSP:5.2},
-        {UF:'MT',nome:'Mato Grosso',HSP:5.1},{UF:'MS',nome:'Mato Grosso do Sul',HSP:5.0},
-        {UF:'MG',nome:'Minas Gerais',HSP:5.2},{UF:'PA',nome:'Pará',HSP:4.7},
-        {UF:'PB',nome:'Paraíba',HSP:5.5},{UF:'PR',nome:'Paraná',HSP:4.4},
-        {UF:'PE',nome:'Pernambuco',HSP:5.5},{UF:'PI',nome:'Piauí',HSP:5.4},
-        {UF:'RJ',nome:'Rio de Janeiro',HSP:4.7},{UF:'RN',nome:'Rio Grande do Norte',HSP:5.5},
-        {UF:'RS',nome:'Rio Grande do Sul',HSP:4.3},{UF:'RO',nome:'Rondônia',HSP:4.6},
-        {UF:'RR',nome:'Roraima',HSP:4.5},{UF:'SC',nome:'Santa Catarina',HSP:4.3},
-        {UF:'SP',nome:'São Paulo',HSP:4.6},{UF:'SE',nome:'Sergipe',HSP:5.3},
-        {UF:'TO',nome:'Tocantins',HSP:5.2}
-      ];
+      // Base de irradiação por CIDADE (HSP médio diário - dados CRESESB/INPE)
+      const HSP_CIDADES = {
+        'Acre': {'Rio Branco':4.5,'Cruzeiro do Sul':4.3,'Sena Madureira':4.4,'Tarauacá':4.3},
+        'Alagoas': {'Maceió':5.5,'Arapiraca':5.4,'Palmeira dos Índios':5.3,'Penedo':5.4},
+        'Amapá': {'Macapá':4.6,'Santana':4.5,'Laranjal do Jari':4.4,'Oiapoque':4.5},
+        'Amazonas': {'Manaus':4.5,'Parintins':4.6,'Itacoatiara':4.5,'Tefé':4.4,'Tabatinga':4.3},
+        'Bahia': {'Salvador':5.3,'Feira de Santana':5.4,'Vitória da Conquista':5.5,'Barreiras':5.7,'Juazeiro':5.9,'Ilhéus':4.9,'Itabuna':5.0,'Luís Eduardo Magalhães':5.8},
+        'Ceará': {'Fortaleza':5.6,'Juazeiro do Norte':5.7,'Sobral':5.5,'Crato':5.6,'Quixadá':5.5,'Iguatu':5.6},
+        'Distrito Federal': {'Brasília':5.2,'Taguatinga':5.2,'Ceilândia':5.2,'Planaltina':5.3},
+        'Espírito Santo': {'Vitória':4.9,'Vila Velha':4.9,'Serra':4.8,'Cachoeiro de Itapemirim':4.8,'Linhares':5.0,'Colatina':5.0},
+        'Goiás': {'Goiânia':5.2,'Aparecida de Goiânia':5.2,'Anápolis':5.1,'Rio Verde':5.3,'Itumbiara':5.3,'Jataí':5.2,'Catalão':5.2},
+        'Maranhão': {'São Luís':5.1,'Imperatriz':5.3,'Caxias':5.4,'Timon':5.4,'Bacabal':5.2,'Balsas':5.5},
+        'Mato Grosso': {'Cuiabá':5.2,'Várzea Grande':5.2,'Rondonópolis':5.1,'Sinop':4.9,'Tangará da Serra':5.0,'Sorriso':5.0,'Lucas do Rio Verde':5.0},
+        'Mato Grosso do Sul': {'Campo Grande':5.1,'Dourados':5.0,'Três Lagoas':5.1,'Corumbá':5.2,'Ponta Porã':4.9,'Naviraí':5.0},
+        'Minas Gerais': {'Belo Horizonte':5.2,'Uberlândia':5.3,'Contagem':5.2,'Juiz de Fora':4.8,'Betim':5.2,'Montes Claros':5.6,'Uberaba':5.3,'Governador Valadares':5.1,'Divinópolis':5.1,'Poços de Caldas':4.9},
+        'Pará': {'Belém':4.7,'Ananindeua':4.7,'Santarém':4.8,'Marabá':5.0,'Castanhal':4.7,'Parauapebas':5.0,'Altamira':4.8},
+        'Paraíba': {'João Pessoa':5.6,'Campina Grande':5.5,'Santa Rita':5.5,'Patos':5.7,'Cajazeiras':5.6,'Sousa':5.7},
+        'Paraná': {'Curitiba':3.9,'Londrina':4.7,'Maringá':4.6,'Ponta Grossa':4.2,'Cascavel':4.5,'Foz do Iguaçu':4.6,'São José dos Pinhais':4.0,'Colombo':3.9,'Guarapuava':4.1,'Paranaguá':3.8,'Toledo':4.5,'Apucarana':4.5,'Umuarama':4.8,'Campo Mourão':4.6,'Cornélio Procópio':4.6,'Cambé':4.7,'Arapongas':4.6,'Rolândia':4.7,'Ibiporã':4.7},
+        'Pernambuco': {'Recife':5.5,'Jaboatão dos Guararapes':5.5,'Olinda':5.5,'Caruaru':5.6,'Petrolina':5.9,'Paulista':5.5,'Garanhuns':5.4},
+        'Piauí': {'Teresina':5.5,'Parnaíba':5.6,'Picos':5.5,'Piripiri':5.4,'Floriano':5.5,'São Raimundo Nonato':5.8,'Bom Jesus':5.7},
+        'Rio de Janeiro': {'Rio de Janeiro':4.7,'São Gonçalo':4.6,'Duque de Caxias':4.6,'Nova Iguaçu':4.6,'Niterói':4.7,'Campos dos Goytacazes':5.0,'Petrópolis':4.4,'Volta Redonda':4.7,'Macaé':4.9},
+        'Rio Grande do Norte': {'Natal':5.6,'Mossoró':5.7,'Parnamirim':5.6,'São Gonçalo do Amarante':5.5,'Caicó':5.8,'Açu':5.7},
+        'Rio Grande do Sul': {'Porto Alegre':4.3,'Caxias do Sul':4.2,'Pelotas':4.2,'Canoas':4.3,'Santa Maria':4.4,'Passo Fundo':4.3,'Novo Hamburgo':4.3,'São Leopoldo':4.3,'Rio Grande':4.2,'Uruguaiana':4.5,'Ijuí':4.4,'Erechim':4.3},
+        'Rondônia': {'Porto Velho':4.6,'Ji-Paraná':4.7,'Ariquemes':4.6,'Vilhena':4.8,'Cacoal':4.7},
+        'Roraima': {'Boa Vista':4.6,'Rorainópolis':4.5,'Caracaraí':4.5,'Pacaraima':4.5},
+        'Santa Catarina': {'Florianópolis':4.0,'Joinville':3.9,'Blumenau':3.9,'Chapecó':4.4,'São José':4.0,'Criciúma':4.1,'Itajaí':4.0,'Lages':4.2,'Jaraguá do Sul':3.9,'Balneário Camboriú':4.0},
+        'São Paulo': {'São Paulo':4.5,'Guarulhos':4.5,'Campinas':4.7,'São Bernardo do Campo':4.5,'Santo André':4.5,'Osasco':4.5,'São José dos Campos':4.6,'Ribeirão Preto':5.1,'Sorocaba':4.6,'Santos':4.4,'São José do Rio Preto':5.0,'Presidente Prudente':4.9,'Bauru':4.9,'Piracicaba':4.7,'Franca':5.1,'Araraquara':5.0,'Marília':4.9,'Jundiaí':4.6},
+        'Sergipe': {'Aracaju':5.4,'Nossa Senhora do Socorro':5.4,'Lagarto':5.3,'Itabaiana':5.3,'Estância':5.3},
+        'Tocantins': {'Palmas':5.3,'Araguaína':5.1,'Gurupi':5.2,'Porto Nacional':5.3,'Paraíso do Tocantins':5.2}
+      };
 
-      const optUF = hspList.map(x => `<option value="${x.UF}|${x.HSP}">${x.nome}</option>`).join('');
+      const optEstados = Object.keys(HSP_CIDADES).map(e => `<option value="${e}">${e}</option>`).join('');
 
       let optClientes = '<option value="">Selecione um cliente cadastrado...</option>';
       if (App.state.clientes && App.state.clientes.length > 0) {
         optClientes += App.state.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
       }
+
+      // Guardar referência global para o cascata
+      window._hspCidades = HSP_CIDADES;
 
       document.getElementById('tab-content').innerHTML = `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
@@ -331,17 +347,25 @@
 
             <div class="glass p-8 rounded-2xl">
               <h2 class="text-xl font-bold mb-6 text-yellow-400">Dados do Projeto</h2>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-6">
                 <div>
                   <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Consumo Médio Atual (kWh/mês)</label>
                   <input type="number" id="calc-kwh" class="input-glass w-full p-4 rounded-xl text-2xl font-bold text-yellow-400" placeholder="Ex: 600" oninput="Calc.update()">
                 </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Localização (Radiação Solar)</label>
-                  <select id="calc-uf" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()">
-                    <option value="">Selecione o Estado...</option>
-                    ${optUF}
-                  </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Estado</label>
+                    <select id="calc-estado" class="input-glass w-full p-4 rounded-xl" onchange="Calc.carregarCidades()">
+                      <option value="">Selecione o Estado...</option>
+                      ${optEstados}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Cidade</label>
+                    <select id="calc-cidade" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()" disabled>
+                      <option value="">Primeiro selecione o estado...</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -386,12 +410,30 @@
   const Calc = {
     dadosAuais: {},
 
+    carregarCidades: () => {
+      const estado = document.getElementById('calc-estado').value;
+      const selCidade = document.getElementById('calc-cidade');
+      if (!estado) {
+        selCidade.innerHTML = '<option value="">Primeiro selecione o estado...</option>';
+        selCidade.disabled = true;
+        document.getElementById('res-kwp').innerText = '0.00';
+        return;
+      }
+      const cidades = window._hspCidades[estado];
+      let opts = '<option value="">Selecione a cidade...</option>';
+      Object.keys(cidades).sort().forEach(c => {
+        opts += `<option value="${cidades[c]}">${c}</option>`;
+      });
+      selCidade.innerHTML = opts;
+      selCidade.disabled = false;
+    },
+
     update: () => {
       const kwh = parseFloat(document.getElementById('calc-kwh').value);
-      const ufData = document.getElementById('calc-uf').value;
+      const hspStr = document.getElementById('calc-cidade').value;
 
-      if (kwh && ufData) {
-        const hsp = parseFloat(ufData.split('|')[1]);
+      if (kwh && hspStr) {
+        const hsp = parseFloat(hspStr);
         const ef = 0.83; // Eficiência N-type (painéis modernos)
         const kwpCalculado = (kwh / 30) / (hsp * ef);
         document.getElementById('res-kwp').innerText = kwpCalculado.toFixed(2);
