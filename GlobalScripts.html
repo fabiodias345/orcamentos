@@ -381,13 +381,29 @@
       const id = document.getElementById('prop-cliente-select').value;
       if(!id) {
          document.getElementById('prop-cliente-nome').value = '';
-         document.getElementById('prop-cliente-end').value = '';
+         document.getElementById('prop-cliente-rua').value = '';
+         document.getElementById('prop-cliente-num').value = '';
+         document.getElementById('prop-cliente-bairro').value = '';
+         document.getElementById('prop-cliente-cidade').value = '';
+         document.getElementById('prop-cliente-uf').value = '';
          return;
       }
       const cli = App.state.clientes.find(c => c.id === id);
       if(cli) {
          document.getElementById('prop-cliente-nome').value = cli.nome;
-         document.getElementById('prop-cliente-end').value = cli.end;
+         try {
+           const pedacosEnd = cli.end.split(' - ');
+           const ruaNum = pedacosEnd[0].split(', ');
+           const bairroCidade = pedacosEnd[1].split(', ');
+           
+           document.getElementById('prop-cliente-rua').value = ruaNum[0] || '';
+           document.getElementById('prop-cliente-num').value = ruaNum[1] || '';
+           document.getElementById('prop-cliente-bairro').value = bairroCidade[0] || '';
+           document.getElementById('prop-cliente-cidade').value = bairroCidade[1] || '';
+           document.getElementById('prop-cliente-uf').value = pedacosEnd[2] || '';
+         } catch(e) {
+           document.getElementById('prop-cliente-rua').value = cli.end;
+         }
       }
     },
 
@@ -425,55 +441,71 @@
           <div class="lg:col-span-2 space-y-8">
             <div class="glass p-8 rounded-2xl">
                <h2 class="text-xl font-bold mb-6 text-yellow-400">Atribuir a um Cliente</h2>
-               <select id="prop-cliente-select" class="input-glass p-4 rounded-xl w-full text-white font-semibold mb-4" onchange="UI.populateSizingClient()">
+               <select id="prop-cliente-select" class="input-glass p-4 rounded-xl w-full text-white font-semibold mb-6" onchange="UI.populateSizingClient()">
                  ${optClientes}
                </select>
-               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <input type="text" id="prop-cliente-nome" placeholder="Nome vai aparecer aqui" class="input-glass p-3 rounded-lg opacity-50 cursor-not-allowed" disabled>
-                 <input type="text" id="prop-cliente-end" placeholder="Endereço vai aparecer aqui" class="input-glass p-3 rounded-lg opacity-50 cursor-not-allowed" disabled>
+               
+               <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                 <div class="md:col-span-12">
+                   <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NOME DO CLIENTE</label>
+                   <input type="text" id="prop-cliente-nome" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled>
+                 </div>
+               </div>
+               <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+                 <div class="md:col-span-9">
+                   <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">RUA / LOGRADOURO</label>
+                   <input type="text" id="prop-cliente-rua" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled>
+                 </div>
+                 <div class="md:col-span-3">
+                   <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NÚMERO</label>
+                   <input type="text" id="prop-cliente-num" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled>
+                 </div>
+               </div>
+               <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+                 <div class="md:col-span-5">
+                   <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">BAIRRO</label>
+                   <input type="text" id="prop-cliente-bairro" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled>
+                 </div>
+                 <div class="md:col-span-5">
+                   <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">CIDADE</label>
+                   <input type="text" id="prop-cliente-cidade" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled>
+                 </div>
+                 <div class="md:col-span-2">
+                   <label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">UF</label>
+                   <input type="text" id="prop-cliente-uf" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled>
+                 </div>
                </div>
             </div>
 
             <div class="glass p-8 rounded-2xl">
-              <h2 class="text-xl font-bold mb-6 text-yellow-400">Dimensionamento</h2>
+              <h2 class="text-xl font-bold mb-6 text-yellow-400">Dados do Projeto</h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Consumo Médio (kWh/mês)</label>
-                  <input type="number" id="calc-kwh" class="input-glass w-full p-4 rounded-xl text-2xl font-bold text-yellow-400" placeholder="600" oninput="Calc.update()">
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Consumo Médio Atual (kWh/mês)</label>
+                  <input type="number" id="calc-kwh" class="input-glass w-full p-4 rounded-xl text-2xl font-bold text-yellow-400" placeholder="Ex: 600" oninput="Calc.update()">
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Estado (Radiação)</label>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Localização (Radiação Solar)</label>
                   <select id="calc-uf" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()">
-                    <option value="">Selecione a Região...</option>
+                    <option value="">Selecione o Estado...</option>
                     ${optUF}
                   </select>
                 </div>
               </div>
             </div>
-
-            <div class="glass p-8 rounded-2xl">
-              <h2 class="text-xl font-bold mb-6 text-yellow-400">Equipamentos</h2>
-              <div class="space-y-4">
-                <select id="calc-mod" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Selecione o Módulo Solar...</option>${optMod}</select>
-                <select id="calc-inv" class="input-glass w-full p-4 rounded-xl" onchange="Calc.update()"><option value="">Selecione o Inversor Solar...</option>${optInv}</select>
-              </div>
-            </div>
           </div>
 
-          <!-- Resumo Financeiro & Tecnico -->
+          <!-- Resumo Tecnico Exclusivo Sizing -->
           <div class="glass p-8 rounded-2xl sticky top-24 self-start">
-            <h3 class="text-lg font-bold mb-4 uppercase text-slate-400">Resumo da Calculadora</h3>
+            <h3 class="text-lg font-bold mb-4 uppercase text-slate-400 border-b border-white/5 pb-2">Resultado</h3>
             <div class="space-y-6">
               <div>
-                <p class="text-xs uppercase font-bold text-slate-500">Potência Requerida</p>
-                <div class="text-4xl font-bold text-yellow-400"><span id="res-kwp">0.00</span> <span class="text-sm">kWp</span></div>
+                <p class="text-xs uppercase font-bold text-slate-400 mb-2">Pela sua localidade o cliente vai precisar de um gerador de:</p>
+                <div class="text-4xl font-bold text-yellow-500"><span id="res-kwp">0.00</span> <span class="text-xl">kWp</span></div>
               </div>
-              <div class="p-4 bg-white/5 rounded-xl space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-slate-400">Qtd. Módulos calculada:</span><span id="res-mod-qty" class="font-bold text-white">0</span></div>
-                <div class="flex justify-between mt-2 pt-2 border-t border-white/10"><span class="text-slate-400">Investimento Total (Venda):</span><span id="res-val" class="text-green-400 font-bold text-lg">R$ 0,00</span></div>
-                <div class="flex justify-between"><span class="text-slate-400">Payback Estimado:</span><span id="res-payback" class="text-blue-400 font-bold">0 Anos</span></div>
+              <div class="p-4 bg-white/5 rounded-xl space-y-2 text-sm text-center text-slate-400">
+                <p>O dimensionamento isolado calcula a potência do arranjo fotovoltaico necessário para suprir o consumo.</p>
               </div>
-              <button onclick="Calc.gerarProposta()" id="btn-proposta" class="btn-primary w-full py-4 rounded-xl shadow-lg mt-4 shadow-yellow-500/20">GERAR PDF COMERCIAL</button>
             </div>
           </div>
         </div>
@@ -500,11 +532,8 @@
     dadosAuais: {},
 
     update: () => {
-      const cat = App.state.catalogos;
       const kwh = parseFloat(document.getElementById('calc-kwh').value);
       const ufData = document.getElementById('calc-uf').value;
-      const modIdx = document.getElementById('calc-mod').value;
-      const invIdx = document.getElementById('calc-inv').value;
 
       if(kwh && ufData) {
         const hsp = parseFloat(ufData.split('|')[1]);
@@ -515,47 +544,8 @@
         
         Calc.dadosAuais.kwh = kwh;
         Calc.dadosAuais.kwp = kwpCalculado.toFixed(2);
-        Calc.dadosAuais.economiaAnual = "R$ " + (kwh * (cat.financeiro.Tarifa_KWH || 0.95) * 12).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-
-        let custoTotalMaterial = 0;
-        if(modIdx !== "") {
-          const modInfo = cat.modulos[modIdx];
-          const potW = modInfo.Potencia_W;
-          const qtd = Math.ceil((kwpCalculado * 1000) / potW);
-          document.getElementById('res-mod-qty').innerText = qtd;
-          custoTotalMaterial += (qtd * modInfo.Preco_Custo);
-          
-          Calc.dadosAuais.qtdPaineis = qtd;
-          Calc.dadosAuais.fabricanteModulo = modInfo.Fabricante;
-          Calc.dadosAuais.potenciaModulo = potW;
-        }
-
-        if(invIdx !== "") {
-          const invInfo = cat.inversores[invIdx];
-          custoTotalMaterial += invInfo.Preco_Custo;
-          Calc.dadosAuais.inversorStr = invInfo.Fabricante + " " + invInfo.Modelo;
-        }
-
-        if(modIdx !== "" && invIdx !== "") {
-          const p = cat.financeiro || {};
-          const maoDeObra = (p.Custo_Mao_Obra_KWP || 500) * kwpCalculado;
-          const custoBruto = custoTotalMaterial + maoDeObra;
-          
-          const margem = (p.Margem_Lucro_Percent || 0) / 100;
-          const impostos = (p.Impostos_Percent || 0) / 100;
-          const valorVenda = custoBruto * (1 + margem) * (1 + impostos);
-          
-          document.getElementById('res-val').innerText = "R$ " + valorVenda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-          Calc.dadosAuais.valorFormatado = "R$ " + valorVenda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-          Calc.dadosAuais.valorNum = valorVenda;
-
-          const eko = kwh * (p.Tarifa_KWH || 0.95) * 12;
-          const pbk = valorVenda / eko;
-          document.getElementById('res-payback').innerText = pbk.toFixed(1) + " Anos";
-          Calc.dadosAuais.payback = pbk.toFixed(1);
-        }
       }
-    },
+    }
 
     gerarProposta: () => {
       const cNome = document.getElementById('prop-cliente-nome').value;
