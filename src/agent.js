@@ -88,9 +88,9 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
   onProgress?.('🔍 Buscando preços na região...');
 
   const queries = [
-    `sistema solar ${kwpR}kWp preço instalação ${cidade} ${estado} 2026`,
-    `energia solar fotovoltaica orçamento ${cidade} ${estado} chave na mão 2026`,
-    `custo sistema fotovoltaico ${Math.round(kwp)}kWp integrador ${estado} 2026 site:mercadolivre.com OR site:olx.com.br OR site:solfacil.com.br`,
+    `mercado energia solar ${cidade} ${estado} 2026 integradores concorrência`,
+    `energia solar fotovoltaica ${estado} demanda crescimento 2026`,
+    `instalação solar ${cidade} prazo entrega qualidade 2026`,
   ];
 
   const resultados = await Promise.all(
@@ -114,41 +114,39 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
     .filter(Boolean)
     .slice(0, 6);
 
-  // ── Referências de preço 2026 — mercado BR real, chave na mão ───────────────
-  // Os preços de solar caíram ~40% desde 2022. Valores abaixo refletem 2026.
+  // ── Tabela de preços 2026 — chave na mão com instalação, mercado BR ─────────
+  // Referência: ABSOLAR, cotações reais de integradores PR/SP/MG, Solfácil 2025-2026
+  // Sistemas comerciais (>10kWp) têm custo maior por kWp: 3-fase, eng. estrutural, SPDA
   let refKwpMin, refKwpMax;
-  if (kwp <= 3)       { refKwpMin = 2200; refKwpMax = 3400; }
-  else if (kwp <= 6)  { refKwpMin = 1800; refKwpMax = 2800; }
-  else if (kwp <= 10) { refKwpMin = 1600; refKwpMax = 2400; }
-  else if (kwp <= 20) { refKwpMin = 1400; refKwpMax = 2000; }
-  else                { refKwpMin = 1200; refKwpMax = 1800; }
+  if      (kwp <= 3)  { refKwpMin = 2800; refKwpMax = 4500; }  // 2kWp ~ R$5k-9k
+  else if (kwp <= 6)  { refKwpMin = 2500; refKwpMax = 3800; }  // 5kWp ~ R$12k-19k
+  else if (kwp <= 10) { refKwpMin = 2800; refKwpMax = 4000; }  // 8kWp ~ R$22k-32k
+  else if (kwp <= 20) { refKwpMin = 3000; refKwpMax = 4500; }  // 15kWp ~ R$45k-67k
+  else if (kwp <= 40) { refKwpMin = 3000; refKwpMax = 4800; }  // 33kWp ~ R$99k-158k
+  else                { refKwpMin = 2800; refKwpMax = 4500; }  // 50kWp+ leve economia escala
 
   const refTotalMin = Math.round(kwp * refKwpMin);
   const refTotalMax = Math.round(kwp * refKwpMax);
   const refTotalMed = Math.round((refTotalMin + refTotalMax) / 2);
+  const refKwpMed   = Math.round((refKwpMin + refKwpMax) / 2);
 
   // ── Etapa 3: prompt estruturado ──────────────────────────────────────────
   const prompt = `Você é um especialista em mercado de energia solar fotovoltaica no Brasil em 2026.
 
-PREÇO DO INTEGRADOR: R$ ${precoIntegrador?.toLocaleString('pt-BR') ?? 'não informado'}
-POTÊNCIA DO SISTEMA: ${kwpR} kWp
-LOCALIDADE: ${cidade} / ${estado}
+SISTEMA ANALISADO:
+- Potência: ${kwpR} kWp | Localidade: ${cidade}/${estado}
+- Preço do integrador: R$ ${precoIntegrador?.toLocaleString('pt-BR') ?? 'não informado'}
 
-TABELA DE REFERÊNCIA OFICIAL 2026 — USE COMO BASE PRINCIPAL:
-- Faixa mínima real: R$ ${refTotalMin.toLocaleString('pt-BR')}
-- Faixa máxima real: R$ ${refTotalMax.toLocaleString('pt-BR')}
-- Média de mercado 2026: R$ ${refTotalMed.toLocaleString('pt-BR')}
-- Preço médio por kWp: R$ ${Math.round((refKwpMin+refKwpMax)/2).toLocaleString('pt-BR')}/kWp
+PREÇOS OFICIAIS DE MERCADO 2026 (chave na mão com instalação):
+- Faixa mínima: R$ ${refTotalMin.toLocaleString('pt-BR')}
+- Faixa máxima: R$ ${refTotalMax.toLocaleString('pt-BR')}
+- Média de mercado: R$ ${refTotalMed.toLocaleString('pt-BR')}
+- Preço médio/kWp: R$ ${refKwpMed.toLocaleString('pt-BR')}/kWp
 
-REGRAS OBRIGATÓRIAS — SIGA À RISCA:
-1. A tabela acima é sua fonte primária. Use esses valores como base.
-2. Os preços do solar caíram ~40% desde 2022. Dados da busca de anos anteriores estão ERRADOS.
-3. Qualquer dado da internet com preço acima de R$ ${refTotalMax.toLocaleString('pt-BR')} para ${kwpR}kWp deve ser DESCARTADO — é dado desatualizado.
-4. Use dados da busca APENAS se confirmarem preço IGUAL OU MENOR que a referência acima.
-5. NUNCA use preços de artigos, blogs ou sites sem data clara de 2026.
-6. Se a busca não trouxer dados confiáveis de 2026, use exatamente os valores da tabela acima.
+REGRA ABSOLUTA: Você DEVE usar os valores acima como faixa_min, faixa_max, media_regiao e preco_por_kwp no JSON.
+Não invente outros valores. Não use preços da internet. A busca abaixo serve APENAS para análise qualitativa da concorrência e mercado regional — nunca para sobrescrever os preços acima.
 
-DADOS DA BUSCA (use apenas se data 2026 e preço ≤ R$ ${refTotalMax.toLocaleString('pt-BR')}):
+CONTEXTO REGIONAL (qualitativo apenas):
 ${contexto}
 
 Retorne APENAS JSON válido no formato:
