@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(curl -s -X POST https://api.supabase.com/v1/projects/mkjznhswwuvtxrnoxmnv/database/query -H 'Authorization: Bearer sbp_7eff34fed5daa297aaa1829bb904bb4f98f6bc56' -H 'Content-Type: application/json' -d '{\"query\": \"SELECT policyname, cmd FROM pg_policies WHERE schemaname = '\\\\''storage'\\\\'' AND tablename = '\\\\''objects'\\\\''\"}')"
     ]
   }
 }

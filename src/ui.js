@@ -341,16 +341,40 @@ export const UI = {
           </div>
         </div>
 
-        <div class="glass p-8 rounded-2xl sticky top-24 self-start">
-          <h3 class="text-lg font-bold mb-4 uppercase text-slate-400 border-b border-white/5 pb-2">Resultado</h3>
-          <div class="space-y-6">
-            <div>
-              <p class="text-xs uppercase font-bold text-slate-400 mb-2">Pela localidade, o cliente precisa de:</p>
-              <div class="text-4xl font-bold text-yellow-500"><span id="res-kwp">0.00</span> <span class="text-xl">kWp</span></div>
+        <div class="glass p-8 rounded-2xl sticky top-24 self-start space-y-6">
+          <!-- Resultado kWp -->
+          <div>
+            <h3 class="text-lg font-bold mb-4 uppercase text-slate-400 border-b border-white/5 pb-2">Resultado</h3>
+            <div class="space-y-4">
+              <div>
+                <p class="text-xs uppercase font-bold text-slate-400 mb-2">Pela localidade, o cliente precisa de:</p>
+                <div class="text-4xl font-bold text-yellow-500"><span id="res-kwp">0.00</span> <span class="text-xl">kWp</span></div>
+              </div>
+              <div class="p-4 bg-white/5 rounded-xl text-sm text-center text-slate-400">
+                <p>O dimensionamento calcula a potência do arranjo fotovoltaico necessário para suprir o consumo mensal.</p>
+              </div>
             </div>
-            <div class="p-4 bg-white/5 rounded-xl text-sm text-center text-slate-400">
-              <p>O dimensionamento calcula a potência do arranjo fotovoltaico necessário para suprir o consumo mensal.</p>
+          </div>
+
+          <!-- Agente de Inteligência de Mercado -->
+          <div class="border-t border-white/10 pt-5">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-base">🤖</span>
+              <h3 class="text-sm font-bold uppercase text-slate-400 tracking-wider">Inteligência de Mercado</h3>
+              <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold">INTERNO</span>
             </div>
+            <p class="text-xs text-slate-500 mb-3">Varre a internet em tempo real para comparar seu preço com a concorrência na região.</p>
+
+            <button id="btn-analisar-mercado"
+              class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-bold transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <span>🔍</span> Analisar Mercado
+            </button>
+
+            <!-- Status da busca -->
+            <div id="agente-status" class="hidden mt-3 text-xs text-center text-blue-400 py-2 px-3 rounded-lg bg-blue-500/10 animate-pulse"></div>
+
+            <!-- Resultado do agente -->
+            <div id="agente-resultado" class="hidden mt-4 space-y-3"></div>
           </div>
         </div>
       </div>
@@ -426,6 +450,9 @@ export const UI = {
     document.getElementById('calc-kwh').addEventListener('input', () => Calc.update());
     document.getElementById('calc-estado').addEventListener('change', () => Calc.carregarCidades());
     document.getElementById('calc-cidade').addEventListener('change', () => Calc.update());
+
+    // Agente de Inteligência de Mercado
+    document.getElementById('btn-analisar-mercado').addEventListener('click', () => UI.rodarAgenteMarket());
 
     // Proposal logic events
     document.getElementById('btn-add-mat').addEventListener('click', () => UI.addMaterialManual());
@@ -720,6 +747,129 @@ export const UI = {
     }
   },
 
+  async rodarAgenteMarket() {
+    const kwpTxt  = document.getElementById('res-kwp')?.innerText;
+    const kwp     = parseFloat(kwpTxt);
+    const cidadeEl = document.getElementById('calc-cidade');
+    const cidade  = cidadeEl?.options[cidadeEl.selectedIndex]?.text || '';
+    const estado  = document.getElementById('calc-estado')?.value || '';
+    const preco   = AppState.propostaTotal || 0;
+
+    if (!kwp || kwp <= 0) return alert('Calcule o dimensionamento primeiro.');
+    if (!cidade || !estado) return alert('Selecione a cidade e estado do cliente.');
+
+    const btn       = document.getElementById('btn-analisar-mercado');
+    const statusEl  = document.getElementById('agente-status');
+    const resultEl  = document.getElementById('agente-resultado');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="animate-spin">⏳</span> Analisando...';
+    statusEl.classList.remove('hidden');
+    resultEl.classList.add('hidden');
+    resultEl.innerHTML = '';
+
+    try {
+      const agentModule = await import('./agent.js');
+      const analise = await agentModule.analisarMercado(
+        { kwp, cidade, estado, precoIntegrador: preco },
+        (msg) => { statusEl.textContent = msg; }
+      );
+      statusEl.classList.add('hidden');
+      UI.renderAgentResult(analise, kwp, preco);
+    } catch (e) {
+      statusEl.textContent = '❌ Erro: ' + e.message;
+      statusEl.classList.remove('animate-pulse');
+      console.error(e);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔍</span> Analisar Mercado';
+    }
+  },
+
+  renderAgentResult(a, kwp, precoIntegrador) {
+    const resultEl = document.getElementById('agente-resultado');
+
+    const fmtR = (v) => v != null
+      ? 'R$ ' + Math.round(v).toLocaleString('pt-BR')
+      : '–';
+
+    const posColors = {
+      'abaixo do mercado':   { bg: 'bg-green-500/15', border: 'border-green-500/40', text: 'text-green-400', icon: '⬇️' },
+      'dentro do mercado':   { bg: 'bg-blue-500/15',  border: 'border-blue-500/40',  text: 'text-blue-400',  icon: '✅' },
+      'acima do mercado':    { bg: 'bg-orange-500/15',border: 'border-orange-500/40',text: 'text-orange-400',icon: '⬆️' },
+      'sem dados suficientes':{ bg: 'bg-white/5',     border: 'border-white/20',     text: 'text-slate-400', icon: '❓' },
+    };
+    const col = posColors[a.posicao] ?? posColors['sem dados suficientes'];
+
+    const confColor = { alta: 'text-green-400', média: 'text-yellow-400', baixa: 'text-red-400' };
+
+    const diffHTML = a.economia_vs_media != null && precoIntegrador > 0
+      ? `<div class="flex justify-between text-xs py-1 border-b border-white/5">
+           <span class="text-slate-400">Diferença vs média</span>
+           <span class="${a.economia_vs_media > 0 ? 'text-orange-400' : 'text-green-400'} font-bold">
+             ${a.economia_vs_media > 0 ? '+' : ''}${fmtR(a.economia_vs_media)}
+             (${a.percentual_vs_media > 0 ? '+' : ''}${a.percentual_vs_media?.toFixed(1) ?? '–'}%)
+           </span>
+         </div>`
+      : '';
+
+    const fontesHTML = a.fontes?.length
+      ? `<div class="mt-3 pt-3 border-t border-white/10">
+           <p class="text-xs text-slate-500 mb-1">Fontes consultadas:</p>
+           <div class="space-y-1">
+             ${a.fontes.map(u => `<a href="${u}" target="_blank" rel="noopener"
+               class="block text-xs text-blue-400/70 hover:text-blue-400 truncate">${u}</a>`).join('')}
+           </div>
+         </div>`
+      : '';
+
+    resultEl.innerHTML = `
+      <!-- Badge de posicionamento -->
+      <div class="${col.bg} ${col.border} border rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-bold ${col.text}">${col.icon} ${a.posicao.toUpperCase()}</span>
+          <span class="text-xs ${confColor[a.confiabilidade] ?? 'text-slate-400'}">
+            confiabilidade ${a.confiabilidade ?? '–'}
+          </span>
+        </div>
+        ${a.analise ? `<p class="text-xs text-slate-300 leading-relaxed">${a.analise}</p>` : ''}
+        ${a.dica ? `<p class="text-xs text-blue-300 mt-2 italic">💡 ${a.dica}</p>` : ''}
+      </div>
+
+      <!-- Faixas de preço -->
+      <div class="bg-white/5 rounded-xl p-4 space-y-2">
+        <p class="text-xs font-bold text-slate-400 uppercase mb-3">
+          Mercado — ${kwp.toFixed(1)} kWp / ${document.getElementById('calc-cidade')?.options[document.getElementById('calc-cidade').selectedIndex]?.text ?? ''}
+        </p>
+        <div class="flex justify-between text-xs py-1 border-b border-white/5">
+          <span class="text-slate-400">Faixa mínima</span>
+          <span class="text-white font-bold">${fmtR(a.faixa_min)}</span>
+        </div>
+        <div class="flex justify-between text-xs py-1 border-b border-white/5">
+          <span class="text-slate-400">Média regional</span>
+          <span class="text-yellow-400 font-bold">${fmtR(a.media_regiao)}</span>
+        </div>
+        <div class="flex justify-between text-xs py-1 border-b border-white/5">
+          <span class="text-slate-400">Faixa máxima</span>
+          <span class="text-white font-bold">${fmtR(a.faixa_max)}</span>
+        </div>
+        <div class="flex justify-between text-xs py-1 border-b border-white/5">
+          <span class="text-slate-400">Preço/kWp médio</span>
+          <span class="text-white font-bold">${a.preco_por_kwp != null ? 'R$ ' + Math.round(a.preco_por_kwp).toLocaleString('pt-BR') + '/kWp' : '–'}</span>
+        </div>
+        ${precoIntegrador > 0 ? `
+        <div class="flex justify-between text-xs py-1 border-b border-white/5">
+          <span class="text-slate-400">Seu preço</span>
+          <span class="${col.text} font-bold">${fmtR(precoIntegrador)}</span>
+        </div>` : ''}
+        ${diffHTML}
+        ${a.baseado_em_referencia ? `<p class="text-xs text-slate-500 mt-2 italic">* Baseado em referência nacional — poucos dados locais encontrados.</p>` : ''}
+      </div>
+      ${fontesHTML}`;
+
+    resultEl.classList.remove('hidden');
+  },
+
   calcProposalTotal() {
     const k = parseFloat(document.getElementById('prop-custo-kit').value) || 0;
     const m = parseFloat(document.getElementById('prop-custo-mo').value) || 0;
@@ -786,26 +936,35 @@ export const UI = {
 
         // Botão E-mail
         const emailCliente = o.clientes?.email || '';
-        const assunto = encodeURIComponent(`Proposta de Energia Solar – ${o.cliente_nome}`);
-        const corpoEmail = encodeURIComponent(
-          `Olá ${o.cliente_nome},\n\nSegue sua proposta comercial de energia solar fotovoltaica:\n\n` +
-          `• Sistema: ${kwp}\n• Investimento: ${valor}\n• Local: ${local}\n\n` +
-          (o.pdf_url ? `Acesse sua proposta completa em PDF:\n${o.pdf_url}\n\n` : '') +
-          `Qualquer dúvida estamos à disposição.\n\nAtenciosamente.`
-        );
-        const mailtoUrl = `mailto:${emailCliente}?subject=${assunto}&body=${corpoEmail}`;
-        const btnEmail = `<a href="${mailtoUrl}"
-             class="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-bold transition-all">
-             📧 E-mail
-           </a>`;
+        const assunto = `Proposta Comercial - Energia Solar Fotovoltaica | ${o.cliente_nome}`;
+        const corpo =
+          `Ola, ${o.cliente_nome}!\n\n` +
+          `E com satisfacao que encaminhamos sua proposta personalizada de geracao de energia solar fotovoltaica, ` +
+          `elaborada com base no seu perfil de consumo e nas condicoes solares da sua regiao.\n\n` +
+          (o.pdf_url ? `Segue o link com sua proposta completa em PDF:\n${o.pdf_url}\n\n` : '') +
+          `Ficamos a inteira disposicao para quaisquer duvidas, ajustes ou para agendar uma apresentacao.\n\n` +
+          `Atenciosamente,\n` +
+          `${o.dados_proposta?.empresa_nome || 'Equipe Comercial'}`;
+        const mailtoUrl = emailCliente
+          ? `mailto:${emailCliente}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`
+          : '';
+        const btnEmail = emailCliente
+          ? `<a href="${mailtoUrl}"
+               class="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-bold transition-all">
+               📧 E-mail
+             </a>`
+          : `<span class="px-3 py-2 text-xs text-slate-600" title="Cliente sem e-mail cadastrado">📧 –</span>`;
 
         // Botão WhatsApp
         const telLimpo = tel.replace(/\D/g, '');
+        const emailCliente2 = o.clientes?.email || '';
         const msgWpp = encodeURIComponent(
-          `Olá ${o.cliente_nome}! ☀️\n\nSegue sua proposta de energia solar:\n\n` +
-          `⚡ Sistema: ${kwp}\n💰 Investimento: ${valor}\n📍 Local: ${local}\n\n` +
-          (o.pdf_url ? `📄 Proposta completa em PDF:\n${o.pdf_url}\n\n` : '') +
-          `Qualquer dúvida estou à disposição!`
+          `Olá, ${o.cliente_nome}! Tudo bem? ☀️\n\n` +
+          `Sua proposta de energia solar fotovoltaica está pronta!\n\n` +
+          `Acabamos de enviar todos os detalhes para o seu e-mail` +
+          (emailCliente2 ? ` (${emailCliente2})` : '') +
+          `. Por favor, verifique sua caixa de entrada.\n\n` +
+          `Qualquer dúvida estamos à disposição, pode chamar aqui ou ligar. Será um prazer atendê-lo(a)!`
         );
         const wppUrl = telLimpo
           ? `https://wa.me/55${telLimpo}?text=${msgWpp}`

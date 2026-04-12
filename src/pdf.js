@@ -193,7 +193,7 @@ function addCanvasToDoc(doc, canvas, isFirst) {
   const cH = canvas.height;
   const pxPerMm = cW / 210;                         // pixels por mm (escala 2×)
   const pageH = Math.round(297 * pxPerMm);           // altura A4 em pixels
-  const minSlice = Math.round(pageH * 0.04);         // fatia mínima: 4% de A4 ≈ 12mm
+  const minSlice = Math.round(pageH * 0.20);         // fatia mínima: 20% de A4 ≈ 60mm
 
   let pageNum = 0;
   let startPx = 0;
@@ -201,8 +201,8 @@ function addCanvasToDoc(doc, canvas, isFirst) {
   while (startPx < cH) {
     const remaining = cH - startPx;
 
-    // Pula fatia residual quase-vazia (sub-pixel overflow → página em branco)
-    if (remaining < minSlice) break;
+    // Pula fatia residual (só para páginas 2+): overflow pequeno de margin/padding
+    if (pageNum > 0 && remaining < minSlice) break;
 
     if (!isFirst || pageNum > 0) doc.addPage();
 
@@ -734,7 +734,7 @@ export async function salvarOrcamento() {
     const estado   = document.getElementById('calc-estado').value;
     const conta    = parseFloat(document.getElementById('prop-conta-energia').value) || 0;
 
-    const { error } = await supabase.from('orcamentos').insert([{
+    const { data: inserted, error } = await supabase.from('orcamentos').insert([{
       user_id:      Data.user.id,
       cliente_id:   cliente.id,
       cliente_nome: cliente.nome,
@@ -752,11 +752,30 @@ export async function salvarOrcamento() {
           extra: document.getElementById('prop-custo-extra').value
         }
       }
-    }]);
+    }]).select('id').single();
 
     if (error) throw error;
 
-    alert('Orçamento salvo com sucesso! Gere o PDF na aba Orçamentos.');
+    // Gera PDF automaticamente após salvar
+    btn.innerText = 'GERANDO PDF...';
+    try {
+      const empresa  = await Data.getEmpresa();
+      const kwpN     = parseFloat(kwpTxt) || 0;
+      const items    = AppState.propostaItems;
+      const pdfUrl   = await generateAndDownload(empresa, cliente, {
+        kwh, kwpTxt, kwpN, cidade, estado, conta, total, items
+      }, inserted.id);
+
+      if (pdfUrl) {
+        alert('Orçamento salvo e PDF gerado com sucesso!');
+      } else {
+        alert('Orçamento salvo! O PDF não pôde ser gerado agora, tente pela aba Orçamentos.');
+      }
+    } catch (pdfErr) {
+      console.error('Erro ao gerar PDF automático:', pdfErr);
+      alert('Orçamento salvo! O PDF não pôde ser gerado agora, tente pela aba Orçamentos.');
+    }
+
     const { Router } = await import('./ui.js');
     Router.to('orcamentos');
   } catch (e) {
@@ -765,6 +784,50 @@ export async function salvarOrcamento() {
   } finally {
     btn.innerText = 'SALVAR ORÇAMENTO';
     btn.disabled = false;
+  }
+}
+
+// Gera PDF e retorna a URL sem tocar no DOM — usada pelo fluxo de e-mail
+export async function gerarPdfUrl(orcamentoId) {
+  try {
+    console.log('[gerarPdfUrl] iniciando para', orcamentoId);
+
+    const { data: orcData, error: orcErr } = await supabase
+      .from('orcamentos').select('*').eq('id', orcamentoId).single();
+    if (orcErr) throw orcErr;
+    console.log('[gerarPdfUrl] orçamento carregado, pdf_url atual:', orcData.pdf_url);
+
+    // Se já tem URL salva no banco, retorna direto sem regerar
+    if (orcData.pdf_url) return orcData.pdf_url;
+
+    const empresa = await Data.getEmpresa();
+    if (!empresa) throw new Error('Empresa não encontrada');
+    console.log('[gerarPdfUrl] empresa:', empresa.nome);
+
+    const { data: clienteData, error: cliErr } = await supabase
+      .from('clientes').select('*').eq('id', orcData.cliente_id).single();
+    if (cliErr) throw cliErr;
+    console.log('[gerarPdfUrl] cliente:', clienteData.nome);
+
+    const dp     = orcData.dados_proposta || {};
+    const kwh    = parseFloat(dp.consumo_kwh) || 0;
+    const kwpTxt = orcData.potencia_kwp || '0.00';
+    const kwpN   = parseFloat(kwpTxt) || 0;
+    const cidade = dp.cidade || '';
+    const estado = dp.estado || '';
+    const conta  = parseFloat(dp.conta_energia) || 0;
+    const total  = parseFloat(orcData.valor_total) || 0;
+    const items  = dp.itens || [];
+
+    const url = await generateAndDownload(empresa, clienteData, {
+      kwh, kwpTxt, kwpN, cidade, estado, conta, total, items
+    }, orcData.id);
+    console.log('[gerarPdfUrl] resultado upload:', url);
+    return url;
+  } catch (e) {
+    console.error('[gerarPdfUrl] ERRO:', e);
+    alert('Erro ao gerar PDF: ' + e.message);
+    return null;
   }
 }
 
@@ -827,6 +890,8 @@ export async function gerarPDFDeOrcamento(orcamentoId) {
     // Recarrega lista
     const { UI } = await import('./ui.js');
     UI.renderOrcamentos();
+
+    return pdfUrl;
   } catch (e) {
     alert('Erro ao gerar PDF: ' + e.message);
     console.error(e);
@@ -834,5 +899,6 @@ export async function gerarPDFDeOrcamento(orcamentoId) {
       btn.innerHTML = textoOriginal;
       btn.disabled = false;
     }
+    return null;
   }
 }
