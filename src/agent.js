@@ -88,9 +88,9 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
   onProgress?.('🔍 Buscando preços na região...');
 
   const queries = [
-    `sistema solar ${kwpR}kWp preço instalação ${cidade} ${estado} 2024 2025`,
-    `energia solar fotovoltaica orçamento ${cidade} ${estado} chave na mão`,
-    `custo sistema fotovoltaico ${Math.round(kwp)}kWp integrador ${estado} site:mercadolivre.com OR site:olx.com.br OR site:solfacil.com.br OR site:getninjas.com.br`,
+    `sistema solar ${kwpR}kWp preço instalação ${cidade} ${estado} 2026`,
+    `energia solar fotovoltaica orçamento ${cidade} ${estado} chave na mão 2026`,
+    `custo sistema fotovoltaico ${Math.round(kwp)}kWp integrador ${estado} 2026 site:mercadolivre.com OR site:olx.com.br OR site:solfacil.com.br`,
   ];
 
   const resultados = await Promise.all(
@@ -114,43 +114,42 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
     .filter(Boolean)
     .slice(0, 6);
 
-  // ── Referências de preço por faixa de potência (mercado BR 2025) ────────────
-  // Fonte: ABSOLAR, SolarEdge Brasil, integradores regionais — preço chave na mão
+  // ── Referências de preço 2026 — mercado BR real, chave na mão ───────────────
+  // Os preços de solar caíram ~40% desde 2022. Valores abaixo refletem 2026.
   let refKwpMin, refKwpMax;
-  if (kwp <= 3)       { refKwpMin = 2800; refKwpMax = 4500; }
-  else if (kwp <= 6)  { refKwpMin = 2200; refKwpMax = 3500; }
-  else if (kwp <= 10) { refKwpMin = 1900; refKwpMax = 3000; }
-  else if (kwp <= 20) { refKwpMin = 1700; refKwpMax = 2600; }
-  else                { refKwpMin = 1500; refKwpMax = 2300; }
+  if (kwp <= 3)       { refKwpMin = 2200; refKwpMax = 3400; }
+  else if (kwp <= 6)  { refKwpMin = 1800; refKwpMax = 2800; }
+  else if (kwp <= 10) { refKwpMin = 1600; refKwpMax = 2400; }
+  else if (kwp <= 20) { refKwpMin = 1400; refKwpMax = 2000; }
+  else                { refKwpMin = 1200; refKwpMax = 1800; }
 
   const refTotalMin = Math.round(kwp * refKwpMin);
   const refTotalMax = Math.round(kwp * refKwpMax);
   const refTotalMed = Math.round((refTotalMin + refTotalMax) / 2);
 
   // ── Etapa 3: prompt estruturado ──────────────────────────────────────────
-  const prompt = `Você é um especialista em mercado de energia solar fotovoltaica no Brasil em 2025.
-
-Analise os dados coletados da internet sobre preços de sistemas solares em ${cidade}/${estado} para um sistema de ${kwpR} kWp e retorne uma análise de posicionamento competitivo.
-
-DADOS COLETADOS DA INTERNET:
-${contexto}
+  const prompt = `Você é um especialista em mercado de energia solar fotovoltaica no Brasil em 2026.
 
 PREÇO DO INTEGRADOR: R$ ${precoIntegrador?.toLocaleString('pt-BR') ?? 'não informado'}
 POTÊNCIA DO SISTEMA: ${kwpR} kWp
 LOCALIDADE: ${cidade} / ${estado}
 
-REFERÊNCIA NACIONAL 2025 para ${kwpR} kWp (chave na mão com instalação):
-- Faixa de preço por kWp: R$ ${refKwpMin.toLocaleString('pt-BR')} a R$ ${refKwpMax.toLocaleString('pt-BR')}/kWp
-- Total estimado mínimo: R$ ${refTotalMin.toLocaleString('pt-BR')}
-- Total estimado máximo: R$ ${refTotalMax.toLocaleString('pt-BR')}
-- Total médio nacional: R$ ${refTotalMed.toLocaleString('pt-BR')}
-ATENÇÃO: os preços caíram muito desde 2022. Use apenas dados de 2024-2025. Ignore menções de R$ 5.000+/kWp pois são desatualizadas.
+TABELA DE REFERÊNCIA OFICIAL 2026 — USE COMO BASE PRINCIPAL:
+- Faixa mínima real: R$ ${refTotalMin.toLocaleString('pt-BR')}
+- Faixa máxima real: R$ ${refTotalMax.toLocaleString('pt-BR')}
+- Média de mercado 2026: R$ ${refTotalMed.toLocaleString('pt-BR')}
+- Preço médio por kWp: R$ ${Math.round((refKwpMin+refKwpMax)/2).toLocaleString('pt-BR')}/kWp
 
-Instruções:
-- Priorize dados reais encontrados na busca, mas filtre apenas referências de 2024-2025
-- Se os dados da busca trouxerem preços muito acima das referências acima, descarte-os como desatualizados
-- Use a referência nacional quando não houver dados regionais suficientes
-- Compare o preço do integrador com a realidade do mercado atual
+REGRAS OBRIGATÓRIAS — SIGA À RISCA:
+1. A tabela acima é sua fonte primária. Use esses valores como base.
+2. Os preços do solar caíram ~40% desde 2022. Dados da busca de anos anteriores estão ERRADOS.
+3. Qualquer dado da internet com preço acima de R$ ${refTotalMax.toLocaleString('pt-BR')} para ${kwpR}kWp deve ser DESCARTADO — é dado desatualizado.
+4. Use dados da busca APENAS se confirmarem preço IGUAL OU MENOR que a referência acima.
+5. NUNCA use preços de artigos, blogs ou sites sem data clara de 2026.
+6. Se a busca não trouxer dados confiáveis de 2026, use exatamente os valores da tabela acima.
+
+DADOS DA BUSCA (use apenas se data 2026 e preço ≤ R$ ${refTotalMax.toLocaleString('pt-BR')}):
+${contexto}
 
 Retorne APENAS JSON válido no formato:
 {
