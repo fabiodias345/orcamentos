@@ -114,8 +114,21 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
     .filter(Boolean)
     .slice(0, 6);
 
-  // ── Etapa 3: prompt estruturado para o Gemini ────────────────────────────
-  const prompt = `Você é um especialista em mercado de energia solar fotovoltaica no Brasil.
+  // ── Referências de preço por faixa de potência (mercado BR 2025) ────────────
+  // Fonte: ABSOLAR, SolarEdge Brasil, integradores regionais — preço chave na mão
+  let refKwpMin, refKwpMax;
+  if (kwp <= 3)       { refKwpMin = 2800; refKwpMax = 4500; }
+  else if (kwp <= 6)  { refKwpMin = 2200; refKwpMax = 3500; }
+  else if (kwp <= 10) { refKwpMin = 1900; refKwpMax = 3000; }
+  else if (kwp <= 20) { refKwpMin = 1700; refKwpMax = 2600; }
+  else                { refKwpMin = 1500; refKwpMax = 2300; }
+
+  const refTotalMin = Math.round(kwp * refKwpMin);
+  const refTotalMax = Math.round(kwp * refKwpMax);
+  const refTotalMed = Math.round((refTotalMin + refTotalMax) / 2);
+
+  // ── Etapa 3: prompt estruturado ──────────────────────────────────────────
+  const prompt = `Você é um especialista em mercado de energia solar fotovoltaica no Brasil em 2025.
 
 Analise os dados coletados da internet sobre preços de sistemas solares em ${cidade}/${estado} para um sistema de ${kwpR} kWp e retorne uma análise de posicionamento competitivo.
 
@@ -126,11 +139,18 @@ PREÇO DO INTEGRADOR: R$ ${precoIntegrador?.toLocaleString('pt-BR') ?? 'não inf
 POTÊNCIA DO SISTEMA: ${kwpR} kWp
 LOCALIDADE: ${cidade} / ${estado}
 
+REFERÊNCIA NACIONAL 2025 para ${kwpR} kWp (chave na mão com instalação):
+- Faixa de preço por kWp: R$ ${refKwpMin.toLocaleString('pt-BR')} a R$ ${refKwpMax.toLocaleString('pt-BR')}/kWp
+- Total estimado mínimo: R$ ${refTotalMin.toLocaleString('pt-BR')}
+- Total estimado máximo: R$ ${refTotalMax.toLocaleString('pt-BR')}
+- Total médio nacional: R$ ${refTotalMed.toLocaleString('pt-BR')}
+ATENÇÃO: os preços caíram muito desde 2022. Use apenas dados de 2024-2025. Ignore menções de R$ 5.000+/kWp pois são desatualizadas.
+
 Instruções:
-- Extraia faixas de preço reais mencionados nos dados
-- Calcule o preço médio por kWp da região (referência: R$ 3.500 a R$ 6.500/kWp para sistemas acima de 10kWp)
-- Se não houver dados suficientes, use os valores de referência nacional ajustados pela região
-- Compare o preço do integrador com o mercado
+- Priorize dados reais encontrados na busca, mas filtre apenas referências de 2024-2025
+- Se os dados da busca trouxerem preços muito acima das referências acima, descarte-os como desatualizados
+- Use a referência nacional quando não houver dados regionais suficientes
+- Compare o preço do integrador com a realidade do mercado atual
 
 Retorne APENAS JSON válido no formato:
 {

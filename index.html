@@ -166,31 +166,44 @@
       <aside class="sidebar-shell h-full relative z-10 w-64 flex flex-col border-r border-white/5 bg-[#020617]">
         <div class="p-8">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-400/20">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.89 15.89 17.3 17.3"/><path d="m4.93 19.07 1.41-1.41"/><path d="M2 12h2"/><path d="M12 22v-2"/><circle cx="12" cy="12" r="4"/></svg>
-            </div>
-            <span class="text-xl font-bold tracking-tight text-white">Solar<span class="text-yellow-400">PRO</span></span>
+            <button id="btn-logo-home" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div class="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-400/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.89 15.89 17.3 17.3"/><path d="m4.93 19.07 1.41-1.41"/><path d="M2 12h2"/><path d="M12 22v-2"/><circle cx="12" cy="12" r="4"/></svg>
+              </div>
+              <span class="text-xl font-bold tracking-tight text-white">Solar<span class="text-yellow-400">PRO</span></span>
+            </button>
           </div>
         </div>
 
-        <nav class="flex-1 px-4 space-y-2 mt-4">
-          <button data-tab="clientes" class="nav-tab sidebar-item flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all group active">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400">
-              <svg class="w-4 h-4 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <nav class="flex-1 px-4 space-y-3 mt-4">
+          <button data-tab="clientes" class="nav-tab group w-full text-left p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:border-yellow-400/30 hover:bg-white/5 group-[.active]:border-yellow-400/40 group-[.active]:bg-yellow-400/5 transition-all duration-200">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400 transition-colors">
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-300 group-hover:text-white group-[.active]:text-white transition-colors">Clientes</span>
             </div>
-            <span class="text-sm font-medium text-slate-400 group-hover:text-white group-[.active]:text-white transition-colors">Clientes</span>
+            <p id="sidebar-count-clientes" class="text-xs text-slate-600 pl-10">carregando...</p>
           </button>
-          <button data-tab="sizing" class="nav-tab sidebar-item flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all group">
-             <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400">
-              <svg class="w-4 h-4 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v19"/><path d="M5 8h14"/><path d="M15 1l-3 3 3 3"/><path d="m9 23 3-3-3-3"/></svg>
+
+          <button data-tab="sizing" class="nav-tab group w-full text-left p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:border-yellow-400/30 hover:bg-white/5 group-[.active]:border-yellow-400/40 group-[.active]:bg-yellow-400/5 transition-all duration-200">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400 transition-colors">
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v19"/><path d="M5 8h14"/><path d="M15 1l-3 3 3 3"/><path d="m9 23 3-3-3-3"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-300 group-hover:text-white group-[.active]:text-white transition-colors">Dimensionamento</span>
             </div>
-            <span class="text-sm font-medium text-slate-400 group-hover:text-white group-[.active]:text-white transition-colors">Dimensionamento</span>
+            <p class="text-xs text-slate-600 pl-10">Calcular sistema</p>
           </button>
-          <button data-tab="orcamentos" class="nav-tab sidebar-item flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all group">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400">
-              <svg class="w-4 h-4 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+
+          <button data-tab="orcamentos" class="nav-tab group w-full text-left p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:border-yellow-400/30 hover:bg-white/5 group-[.active]:border-yellow-400/40 group-[.active]:bg-yellow-400/5 transition-all duration-200">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400 transition-colors">
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-300 group-hover:text-white group-[.active]:text-white transition-colors">Orçamentos</span>
             </div>
-            <span class="text-sm font-medium text-slate-400 group-hover:text-white group-[.active]:text-white transition-colors">Orçamentos</span>
+            <p id="sidebar-count-orcamentos" class="text-xs text-slate-600 pl-10">carregando...</p>
           </button>
         </nav>
 
@@ -211,9 +224,7 @@
       </aside>
     
       <!-- Content Container -->
-      <main class="flex-1 flex flex-col min-h-screen bg-[#020617] relative overflow-hidden">
-        <div class="app-bg-image"></div>
-        <div class="app-bg-overlay"></div>
+      <main id="main-area" class="flex-1 flex flex-col min-h-screen relative overflow-hidden">
         <header class="h-20 px-10 flex justify-between items-center border-b border-white/5 sticky top-0 bg-[#020617]/80 backdrop-blur-xl z-30">
           <h2 class="text-lg font-bold tracking-tight" id="active-tab-title">Minha Empresa</h2>
           <div id="header-actions"></div>

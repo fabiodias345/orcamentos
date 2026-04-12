@@ -95,6 +95,15 @@ body {
   box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
+/* Borda amarela quando campo preenchido */
+.input-glass:not(:placeholder-shown) {
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+select.input-glass:not([value=""]):valid {
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
 /* Sidebar Layout */
 .app-shell {
   display: grid;
@@ -173,7 +182,12 @@ body {
   pointer-events: none;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+/* Main area background toggle */
+.main-content-bg {
+  background: rgba(2, 6, 23, 0.92);
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: rgba(251, 191, 36, 0.03); }
+::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.18); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(251, 191, 36, 0.35); }

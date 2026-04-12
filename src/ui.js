@@ -46,14 +46,17 @@ export const Router = {
 
       document.getElementById('loader').classList.add('hidden');
       container.classList.remove('hidden');
-      
+
       Router.renderTab(AppState.activeTab);
+
+      // Carrega contadores da sidebar em background
+      Router.updateSidebarCounts();
     }
   },
   to: (tab) => {
     AppState.activeTab = tab;
     Router.renderTab(tab);
-    
+
     // Update active state in sidebar
     document.querySelectorAll('.nav-tab').forEach(el => {
       el.classList.remove('active', 'bg-white/10', 'text-yellow-400');
@@ -64,12 +67,25 @@ export const Router = {
 
     // Update Header Title
     const titles = {
+      'home': '',
       'empresa': 'Empresa',
       'clientes': 'Gestão de Clientes',
       'sizing': 'Dimensionamento',
       'orcamentos': 'Orçamentos'
     };
-    document.getElementById('active-tab-title').innerText = titles[tab] || tab;
+    document.getElementById('active-tab-title').innerText = titles[tab] ?? tab;
+  },
+  updateSidebarCounts: async () => {
+    try {
+      const clientes = await Data.getClientes();
+      const el = document.getElementById('sidebar-count-clientes');
+      if (el) el.textContent = `${clientes?.length || 0} cadastrado${(clientes?.length || 0) !== 1 ? 's' : ''}`;
+    } catch(e) {}
+    try {
+      const orcamentos = await Data.getOrcamentos();
+      const el = document.getElementById('sidebar-count-orcamentos');
+      if (el) el.textContent = `${orcamentos?.length || 0} proposta${(orcamentos?.length || 0) !== 1 ? 's' : ''}`;
+    } catch(e) {}
   },
   renderTab: (tab) => {
     const container = document.getElementById('tab-content');
@@ -89,6 +105,71 @@ export const Router = {
 };
 
 export const UI = {
+  // ---------- HOME / BOAS-VINDAS ----------
+  async renderHome() {
+    document.getElementById('header-actions').innerHTML = '';
+    document.getElementById('active-tab-title').innerText = '';
+
+    const emailRaw = Data.user?.email || '';
+    const userName = emailRaw.split('@')[0] || 'Usuário';
+    const hora = new Date().getHours();
+    const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+
+    let totalClientes = 0;
+    let totalOrcamentos = 0;
+    try {
+      const c = await Data.getClientes();
+      totalClientes = c?.length || 0;
+    } catch(e) {}
+    try {
+      const o = await Data.getOrcamentos();
+      totalOrcamentos = o?.length || 0;
+    } catch(e) {}
+
+    const container = document.getElementById('tab-content');
+    container.innerHTML = `
+      <div class="flex flex-col justify-end animate-fade-in" style="min-height: calc(100vh - 5rem); padding-bottom: 4rem;">
+        <div class="max-w-2xl">
+          <p class="text-yellow-400 text-xs font-semibold tracking-[0.3em] uppercase mb-5">Sistema de Orçamentos Solares</p>
+          <h1 class="font-bold leading-none text-white mb-4" style="font-size: clamp(2.8rem, 5vw, 4.5rem);">
+            ${saudacao},<br><span class="text-yellow-400">${userName}</span>
+          </h1>
+          <p class="text-slate-400 text-lg mb-10">O que vamos fazer hoje?</p>
+
+          <div class="grid grid-cols-3 gap-4 max-w-lg">
+            <button data-go="clientes" class="group text-left p-5 rounded-2xl border border-white/8 bg-[#020617]/70 backdrop-blur-sm hover:border-yellow-400/50 hover:bg-[#020617]/90 transition-all duration-300">
+              <div class="w-9 h-9 bg-yellow-400/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-yellow-400/20 transition-colors">
+                <svg class="w-4 h-4 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <p class="text-white text-sm font-semibold mb-0.5">Clientes</p>
+              <p class="text-slate-500 text-xs">${totalClientes} cadastrado${totalClientes !== 1 ? 's' : ''}</p>
+            </button>
+
+            <button data-go="sizing" class="group text-left p-5 rounded-2xl border border-white/8 bg-[#020617]/70 backdrop-blur-sm hover:border-yellow-400/50 hover:bg-[#020617]/90 transition-all duration-300">
+              <div class="w-9 h-9 bg-yellow-400/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-yellow-400/20 transition-colors">
+                <svg class="w-4 h-4 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v19"/><path d="M5 8h14"/><path d="M15 1l-3 3 3 3"/><path d="m9 23 3-3-3-3"/></svg>
+              </div>
+              <p class="text-white text-sm font-semibold mb-0.5">Dimensionamento</p>
+              <p class="text-slate-500 text-xs">Calcular sistema</p>
+            </button>
+
+            <button data-go="orcamentos" class="group text-left p-5 rounded-2xl border border-white/8 bg-[#020617]/70 backdrop-blur-sm hover:border-yellow-400/50 hover:bg-[#020617]/90 transition-all duration-300">
+              <div class="w-9 h-9 bg-yellow-400/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-yellow-400/20 transition-colors">
+                <svg class="w-4 h-4 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+              </div>
+              <p class="text-white text-sm font-semibold mb-0.5">Orçamentos</p>
+              <p class="text-slate-500 text-xs">${totalOrcamentos} proposta${totalOrcamentos !== 1 ? 's' : ''}</p>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.querySelectorAll('[data-go]').forEach(btn => {
+      btn.addEventListener('click', () => Router.to(btn.dataset.go));
+    });
+  },
+
   // ---------- ABA EMPRESA ----------
   async renderEmpresa() {
     const container = document.getElementById('tab-content');
@@ -493,16 +574,16 @@ export const UI = {
               <h3 class="text-xl font-bold tracking-tight">Análise de Consumo</h3>
             </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+              <div class="flex flex-col">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-[0.1em] mb-4">Consumo Médio Mensal</label>
-                <div class="relative">
-                  <input type="number" id="calc-kwh" class="w-full bg-slate-900/50 border-2 border-white/5 rounded-2xl p-6 text-4xl font-bold text-yellow-400 focus:border-yellow-400/50 outline-none transition-all placeholder:text-slate-800" placeholder="000">
+                <div class="relative flex-1">
+                  <input type="number" id="calc-kwh" class="sizing-field w-full h-full min-h-[100px] bg-slate-900/50 border-2 border-white/5 rounded-2xl px-6 text-4xl font-bold text-yellow-400 focus:border-yellow-400/50 outline-none transition-all placeholder:text-slate-800" placeholder="000">
                   <span class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-xl uppercase tracking-widest">kWh</span>
                 </div>
               </div>
 
-              <div class="glass bg-yellow-400/[0.03] border-yellow-400/20 p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+              <div class="glass bg-yellow-400/[0.03] border-yellow-400/20 p-6 rounded-2xl flex flex-col justify-center items-center text-center min-h-[100px]">
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Potência de Pico Necessária</span>
                 <div class="flex items-baseline gap-2">
                   <span id="res-kwp-local" class="text-5xl font-bold text-white tracking-tighter">0.00</span>
@@ -685,7 +766,13 @@ export const UI = {
       }
     });
 
-    document.getElementById('calc-kwh').addEventListener('input', () => Calc.update());
+    const kwhInput = document.getElementById('calc-kwh');
+    kwhInput.addEventListener('input', () => {
+      Calc.update();
+      kwhInput.classList.toggle('border-yellow-400/60', kwhInput.value.trim() !== '');
+      kwhInput.classList.toggle('border-white/5', kwhInput.value.trim() === '');
+    });
+
     document.getElementById('calc-estado').addEventListener('change', () => Calc.carregarCidades());
     document.getElementById('calc-cidade').addEventListener('change', () => Calc.update());
     document.getElementById('btn-analisar-mercado').addEventListener('click', () => UI.rodarAgenteMarket());
