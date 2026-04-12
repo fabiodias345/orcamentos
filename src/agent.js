@@ -1,9 +1,9 @@
 // ─── Agente de Inteligência de Mercado Solar ─────────────────────────────────
-// Usa Tavily (busca web) + Groq / Llama 3 (análise) para varrer preços da
+// Usa Tavily (busca web) + MiniMax (análise) para varrer preços da
 // concorrência na região do cliente e posicionar o preço do integrador.
 
-const TAVILY_KEY = import.meta.env.VITE_TAVILY_KEY;
-const GROQ_KEY   = import.meta.env.VITE_GROQ_KEY;
+const TAVILY_KEY   = import.meta.env.VITE_TAVILY_KEY;
+const MINIMAX_KEY  = import.meta.env.VITE_MINIMAX_KEY;
 
 // ─── Tavily: busca web orientada a agentes ────────────────────────────────────
 
@@ -17,7 +17,7 @@ async function tavilySearch(query, options = {}) {
       search_depth: options.depth ?? 'basic',
       max_results: options.maxResults ?? 5,
       include_answer: true,
-      days: options.days ?? 180,          // só resultados dos últimos 6 meses
+      days: options.days ?? 180,
       include_domains: options.domains ?? [],
       exclude_domains: options.exclude ?? [],
     }),
@@ -26,49 +26,40 @@ async function tavilySearch(query, options = {}) {
   return res.json();
 }
 
-// ─── Groq / Llama 3: análise e estruturação dos dados ───────────────────────
+// ─── MiniMax: análise e estruturação dos dados ───────────────────────────────
 
-// Modelos tentados em ordem de preferência
-const GROQ_MODELS = [
-  'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant',
-  'gemma2-9b-it',
-];
+async function minimaxAnalyze(prompt) {
+  const res = await fetch('https://api.minimaxi.chat/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${MINIMAX_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'MiniMax-Text-01',
+      messages: [
+        {
+          role: 'system',
+          content: 'Você é um analista de mercado de energia solar no Brasil. Responda SEMPRE com JSON válido, sem texto adicional, sem blocos de código markdown.'
+        },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.1,
+      max_tokens: 1024,
+    }),
+  });
 
-async function groqAnalyze(prompt) {
-  let lastErr = null;
-
-  for (const model of GROQ_MODELS) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_KEY}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.2,
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '');
-      console.warn(`Groq model ${model} → HTTP ${res.status}:`, errBody);
-      lastErr = new Error(`Groq ${model} erro ${res.status}: ${errBody.slice(0, 200)}`);
-      continue; // tenta próximo modelo
-    }
-
-    const data = await res.json();
-    const raw  = data.choices?.[0]?.message?.content;
-    if (!raw) { lastErr = new Error('Groq não retornou conteúdo.'); continue; }
-
-    // Remove possíveis blocos ```json ... ```
-    return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error(`MiniMax erro ${res.status}: ${err.slice(0, 200)}`);
   }
 
-  throw lastErr ?? new Error('Todos os modelos Groq falharam.');
+  const data = await res.json();
+  const raw  = data.choices?.[0]?.message?.content;
+  if (!raw) throw new Error('MiniMax não retornou conteúdo.');
+
+  // Remove possíveis blocos ```json ... ```
+  return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 }
 
 // ─── Agente principal ─────────────────────────────────────────────────────────
@@ -158,7 +149,7 @@ Retorne APENAS JSON válido no formato:
   "baseado_em_referencia": <true se usou referência nacional por falta de dados locais>
 }`;
 
-  const jsonStr = await groqAnalyze(prompt);
+  const jsonStr = await minimaxAnalyze(prompt);
   const analise = JSON.parse(jsonStr);
 
   // Injeta a lista de fontes reais encontradas
