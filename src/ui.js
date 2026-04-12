@@ -1184,7 +1184,7 @@ export const UI = {
   populateSizingClient() {
     const id = document.getElementById('prop-cliente-select').value;
     const campos = ['prop-cliente-nome','prop-cliente-rua','prop-cliente-num','prop-cliente-bairro','prop-cliente-cidade','prop-cliente-uf'];
-    if (!id) { campos.forEach(c => document.getElementById(c).value = ''); return; }
+    if (!id) { campos.forEach(c => { const el = document.getElementById(c); if (el) el.value = ''; }); return; }
     const cli = AppState.clientes.find(c => c.id === id);
     if (cli) {
       document.getElementById('prop-cliente-nome').value = cli.nome || '';
