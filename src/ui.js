@@ -574,22 +574,24 @@ export const UI = {
               <h3 class="text-xl font-bold tracking-tight">Análise de Consumo</h3>
             </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-              <div class="flex flex-col">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-[0.1em] mb-4">Consumo Médio Mensal</label>
-                <div class="relative flex-1">
-                  <input type="number" id="calc-kwh" class="sizing-field w-full h-full min-h-[100px] bg-slate-900/50 border-2 border-white/5 rounded-2xl px-6 text-4xl font-bold text-yellow-400 focus:border-yellow-400/50 outline-none transition-all placeholder:text-slate-800" placeholder="000">
-                  <span class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-xl uppercase tracking-widest">kWh</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="bg-slate-900/50 border-2 border-white/5 rounded-2xl p-6 flex flex-col justify-between transition-all" id="box-kwh">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 block">Consumo Médio Mensal</span>
+                <div class="relative">
+                  <input type="number" id="calc-kwh" class="sizing-field w-full bg-transparent border-none outline-none text-5xl font-bold text-yellow-400 placeholder:text-slate-800 pr-20" placeholder="000">
+                  <span class="absolute right-0 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-lg uppercase tracking-widest">kWh</span>
                 </div>
               </div>
 
-              <div class="glass bg-yellow-400/[0.03] border-yellow-400/20 p-6 rounded-2xl flex flex-col justify-center items-center text-center min-h-[100px]">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Potência de Pico Necessária</span>
-                <div class="flex items-baseline gap-2">
-                  <span id="res-kwp-local" class="text-5xl font-bold text-white tracking-tighter">0.00</span>
-                  <span class="text-xl font-bold text-yellow-400">kWp</span>
+              <div class="glass bg-yellow-400/[0.03] border-yellow-400/20 p-6 rounded-2xl flex flex-col justify-between">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 block">Potência de Pico Necessária</span>
+                <div>
+                  <div class="flex items-baseline gap-2">
+                    <span id="res-kwp-local" class="text-5xl font-bold text-white tracking-tighter">0.00</span>
+                    <span class="text-xl font-bold text-yellow-400">kWp</span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 mt-2 font-medium">Dimensionamento Técnico Sugerido</p>
                 </div>
-                <p class="text-[10px] text-slate-500 mt-2 font-medium">Dimensionamento Técnico Sugerido</p>
               </div>
             </div>
             
@@ -767,10 +769,12 @@ export const UI = {
     });
 
     const kwhInput = document.getElementById('calc-kwh');
+    const boxKwh   = document.getElementById('box-kwh');
     kwhInput.addEventListener('input', () => {
       Calc.update();
-      kwhInput.classList.toggle('border-yellow-400/60', kwhInput.value.trim() !== '');
-      kwhInput.classList.toggle('border-white/5', kwhInput.value.trim() === '');
+      const filled = kwhInput.value.trim() !== '';
+      boxKwh.classList.toggle('border-yellow-400/60', filled);
+      boxKwh.classList.toggle('border-white/5',       !filled);
     });
 
     document.getElementById('calc-estado').addEventListener('change', () => Calc.carregarCidades());
