@@ -131,23 +131,38 @@ INSTRUÇÕES PARA ANÁLISE DE PREÇOS:
 - Se os dados forem insuficientes ou contraditórios, indique confiabilidade "baixa" e use sua estimativa fundamentada
 - NÃO invente preços. Se não há dados, diga que não há dados suficientes na região
 
-Retorne APENAS JSON válido no formato:
+Retorne APENAS o objeto JSON abaixo preenchido, sem texto antes ou depois:
 {
-  "media_regiao": <número inteiro em R$ — preço total médio para ${kwpR}kWp>,
-  "faixa_min": <número inteiro R$>,
-  "faixa_max": <número inteiro R$>,
-  "preco_por_kwp": <número inteiro R$/kWp médio da região>,
-  "posicao": "abaixo do mercado" | "dentro do mercado" | "acima do mercado" | "sem dados suficientes",
-  "economia_vs_media": <número inteiro R$ — diferença do preço do integrador vs média, positivo=mais caro>,
-  "percentual_vs_media": <número — % acima ou abaixo da média, negativo=mais barato>,
-  "analise": "<2 frases diretas sobre o posicionamento do preço do integrador>",
-  "dica": "<1 frase de recomendação ao integrador>",
-  "confiabilidade": "alta" | "média" | "baixa",
-  "baseado_em_referencia": <true se usou referência nacional por falta de dados locais>
-}`;
+  "media_regiao": 0,
+  "faixa_min": 0,
+  "faixa_max": 0,
+  "preco_por_kwp": 0,
+  "posicao": "dentro do mercado",
+  "economia_vs_media": 0,
+  "percentual_vs_media": 0,
+  "analise": "texto aqui",
+  "dica": "texto aqui",
+  "confiabilidade": "media",
+  "baseado_em_referencia": false
+}
+
+Regras para preencher:
+- media_regiao, faixa_min, faixa_max, preco_por_kwp, economia_vs_media: números inteiros sem ponto nem vírgula
+- percentual_vs_media: número decimal (ex: -15.5)
+- posicao: exatamente uma destas strings: "abaixo do mercado", "dentro do mercado", "acima do mercado", "sem dados suficientes"
+- confiabilidade: exatamente uma destas strings: "alta", "media", "baixa"
+- economia_vs_media: preco_integrador menos media_regiao (negativo = integrador mais barato)
+- percentual_vs_media: ((preco_integrador - media_regiao) / media_regiao) * 100`;
 
   const jsonStr = await geminiAnalyze(prompt);
-  const analise = JSON.parse(jsonStr);
+
+  let analise;
+  try {
+    analise = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('JSON inválido recebido do Gemini:', jsonStr.slice(0, 500));
+    throw new Error('Erro ao interpretar resposta do Gemini. Tente novamente.');
+  }
 
   // Injeta a lista de fontes reais encontradas
   analise.fontes = fontesList;
