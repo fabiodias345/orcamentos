@@ -38,7 +38,7 @@ async function geminiAnalyze(prompt) {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 8192,
         responseMimeType: 'application/json',
       },
       systemInstruction: {
@@ -101,10 +101,10 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
 
   const contexto = resultados.map((r, i) => {
     const trechos = r.results
-      ?.slice(0, 3)
-      .map(x => `  Fonte: ${x.title} | URL: ${x.url}\n  ${x.content?.slice(0, 400) ?? ''}`)
+      ?.slice(0, 2)
+      .map(x => `  Fonte: ${x.title}\n  ${x.content?.slice(0, 250) ?? ''}`)
       .join('\n') ?? '';
-    const answer = r.answer ? `  Resumo: ${r.answer}\n` : '';
+    const answer = r.answer ? `  Resumo: ${r.answer?.slice(0, 300)}\n` : '';
     return `--- Busca ${i + 1} ---\n${answer}${trechos}`;
   }).join('\n\n');
 

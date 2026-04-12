@@ -1186,21 +1186,20 @@ export const UI = {
     const campos = ['prop-cliente-nome','prop-cliente-rua','prop-cliente-num','prop-cliente-bairro','prop-cliente-cidade','prop-cliente-uf'];
     if (!id) { campos.forEach(c => { const el = document.getElementById(c); if (el) el.value = ''; }); return; }
     const cli = AppState.clientes.find(c => c.id === id);
-    if (cli) {
-      document.getElementById('prop-cliente-nome').value = cli.nome || '';
-      try {
-        const end = cli.endereco || '';
-        const p = end.split(' - ');
-        const rn = (p[0]||'').split(', ');
-        const bc = (p[1]||'').split(', ');
-        document.getElementById('prop-cliente-rua').value = rn[0] || '';
-        document.getElementById('prop-cliente-num').value = rn[1] || '';
-        document.getElementById('prop-cliente-bairro').value = bc[0] || '';
-        document.getElementById('prop-cliente-cidade').value = bc[1] || '';
-        document.getElementById('prop-cliente-uf').value = p[2] || '';
-      } catch (e) {
-        document.getElementById('prop-cliente-rua').value = cli.endereco || '';
-      }
+    if (!cli) return;
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('prop-cliente-nome', cli.nome);
+    try {
+      const p = (cli.endereco || '').split(' - ');
+      const rn = (p[0]||'').split(', ');
+      const bc = (p[1]||'').split(', ');
+      setVal('prop-cliente-rua',    rn[0]);
+      setVal('prop-cliente-num',    rn[1]);
+      setVal('prop-cliente-bairro', bc[0]);
+      setVal('prop-cliente-cidade', bc[1]);
+      setVal('prop-cliente-uf',     p[2]);
+    } catch (e) {
+      setVal('prop-cliente-rua', cli.endereco);
     }
   },
 
