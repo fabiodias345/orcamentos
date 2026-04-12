@@ -1,9 +1,9 @@
 // ─── Agente de Inteligência de Mercado Solar ─────────────────────────────────
-// Usa Tavily (busca web) + Google Gemini Flash (análise) para varrer preços da
+// Usa Tavily (busca web) + Groq / Llama 3 (análise) para varrer preços da
 // concorrência na região do cliente e posicionar o preço do integrador.
 
 const TAVILY_KEY  = import.meta.env.VITE_TAVILY_KEY;
-const GEMINI_KEY  = import.meta.env.VITE_GEMINI_KEY;
+const GROQ_KEY    = import.meta.env.VITE_GROQ_KEY;
 
 // ─── Tavily: busca web orientada a agentes ────────────────────────────────────
 
@@ -26,37 +26,51 @@ async function tavilySearch(query, options = {}) {
   return res.json();
 }
 
-// ─── Google Gemini Flash: análise e estruturação dos dados ───────────────────
+// ─── Groq / Llama 3: análise e estruturação dos dados ───────────────────────
 
-async function geminiAnalyze(prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+const GROQ_MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'gemma2-9b-it',
+];
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
+async function groqAnalyze(prompt) {
+  let lastErr = null;
+  for (const model of GROQ_MODELS) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um analista de mercado de energia solar no Brasil. Responda SEMPRE com JSON válido e nada mais — sem texto antes, sem blocos markdown, sem explicações.'
+          },
+          { role: 'user', content: prompt }
+        ],
         temperature: 0.1,
-        maxOutputTokens: 1024,
-        responseMimeType: 'application/json',  // força JSON puro, sem markdown
-      },
-      systemInstruction: {
-        parts: [{ text: 'Você é um analista de mercado de energia solar no Brasil. Responda SEMPRE com JSON válido, sem texto adicional, sem blocos de código markdown.' }]
-      },
-    }),
-  });
+        max_tokens: 1024,
+      }),
+    });
 
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Gemini erro ${res.status}: ${err.slice(0, 200)}`);
+    if (!res.ok) {
+      const err = await res.text().catch(() => '');
+      lastErr = new Error(`Groq ${model} erro ${res.status}`);
+      console.warn(lastErr.message, err.slice(0, 200));
+      continue;
+    }
+
+    const data = await res.json();
+    const raw  = data.choices?.[0]?.message?.content;
+    if (!raw) { lastErr = new Error('Groq sem conteúdo'); continue; }
+
+    return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   }
-
-  const data = await res.json();
-  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!raw) throw new Error('Gemini não retornou conteúdo.');
-
-  return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  throw lastErr ?? new Error('Todos os modelos Groq falharam.');
 }
 
 // ─── Agente principal ─────────────────────────────────────────────────────────
@@ -146,7 +160,7 @@ Retorne APENAS JSON válido no formato:
   "baseado_em_referencia": <true se usou referência nacional por falta de dados locais>
 }`;
 
-  const jsonStr = await geminiAnalyze(prompt);
+  const jsonStr = await groqAnalyze(prompt);
   const analise = JSON.parse(jsonStr);
 
   // Injeta a lista de fontes reais encontradas
