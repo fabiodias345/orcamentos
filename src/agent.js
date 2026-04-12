@@ -7,18 +7,19 @@ const GROQ_KEY   = import.meta.env.VITE_GROQ_KEY;
 
 // ─── Tavily: busca web orientada a agentes ────────────────────────────────────
 
-async function tavilySearch(query) {
+async function tavilySearch(query, options = {}) {
   const res = await fetch('https://api.tavily.com/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       api_key: TAVILY_KEY,
       query,
-      search_depth: 'basic',
-      max_results: 5,
+      search_depth: options.depth ?? 'basic',
+      max_results: options.maxResults ?? 5,
       include_answer: true,
-      include_domains: [],
-      exclude_domains: [],
+      days: options.days ?? 180,          // só resultados dos últimos 6 meses
+      include_domains: options.domains ?? [],
+      exclude_domains: options.exclude ?? [],
     }),
   });
   if (!res.ok) throw new Error(`Tavily error ${res.status}`);
@@ -87,15 +88,25 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
   // ── Etapa 1: 3 buscas paralelas ──────────────────────────────────────────
   onProgress?.('🔍 Buscando preços na região...');
 
-  const queries = [
-    `mercado energia solar ${cidade} ${estado} 2026 integradores concorrência`,
-    `energia solar fotovoltaica ${estado} demanda crescimento 2026`,
-    `instalação solar ${cidade} prazo entrega qualidade 2026`,
+  // Busca 1: anúncios reais em marketplaces — preços praticados hoje
+  // Busca 2: integradores locais com preço explícito na cidade/estado
+  // Busca 3: distribuidoras e cotações recentes do estado
+  const searches = [
+    tavilySearch(
+      `sistema solar ${kwpR}kWp instalado ${cidade} preço R$`,
+      { domains: ['olx.com.br', 'mercadolivre.com.br', 'getninjas.com.br', 'habitissimo.com.br'], days: 180, maxResults: 6 }
+    ),
+    tavilySearch(
+      `orçamento sistema fotovoltaico ${kwpR}kWp chave na mão ${cidade} ${estado}`,
+      { depth: 'advanced', days: 180, maxResults: 5 }
+    ),
+    tavilySearch(
+      `energia solar ${Math.round(kwp)}kWp instalação completa preço ${estado}`,
+      { domains: ['solfacil.com.br', 'aldo.com.br', 'portal.solar'], days: 270, maxResults: 5 }
+    ),
   ];
 
-  const resultados = await Promise.all(
-    queries.map(q => tavilySearch(q).catch(() => ({ results: [], answer: null })))
-  );
+  const resultados = await Promise.all(searches.map(p => p.catch(() => ({ results: [], answer: null }))));
 
   // ── Etapa 2: monta contexto para o Gemini ────────────────────────────────
   onProgress?.('🧠 Analisando dados do mercado...');
@@ -103,10 +114,10 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
   const contexto = resultados.map((r, i) => {
     const trechos = r.results
       ?.slice(0, 3)
-      .map(x => `  Fonte: ${x.title}\n  ${x.content?.slice(0, 400) ?? ''}`)
+      .map(x => `  Fonte: ${x.title} | URL: ${x.url}\n  ${x.content?.slice(0, 400) ?? ''}`)
       .join('\n') ?? '';
-    const answer = r.answer ? `  Resumo Tavily: ${r.answer}\n` : '';
-    return `--- Busca ${i + 1}: "${queries[i]}" ---\n${answer}${trechos}`;
+    const answer = r.answer ? `  Resumo: ${r.answer}\n` : '';
+    return `--- Busca ${i + 1} ---\n${answer}${trechos}`;
   }).join('\n\n');
 
   const fontesList = resultados
@@ -114,40 +125,23 @@ export async function analisarMercado({ kwp, cidade, estado, precoIntegrador }, 
     .filter(Boolean)
     .slice(0, 6);
 
-  // ── Tabela de preços 2026 — chave na mão com instalação, mercado BR ─────────
-  // Referência: ABSOLAR, cotações reais de integradores PR/SP/MG, Solfácil 2025-2026
-  // Sistemas comerciais (>10kWp) têm custo maior por kWp: 3-fase, eng. estrutural, SPDA
-  let refKwpMin, refKwpMax;
-  if      (kwp <= 3)  { refKwpMin = 2800; refKwpMax = 4500; }  // 2kWp ~ R$5k-9k
-  else if (kwp <= 6)  { refKwpMin = 2500; refKwpMax = 3800; }  // 5kWp ~ R$12k-19k
-  else if (kwp <= 10) { refKwpMin = 2800; refKwpMax = 4000; }  // 8kWp ~ R$22k-32k
-  else if (kwp <= 20) { refKwpMin = 3000; refKwpMax = 4500; }  // 15kWp ~ R$45k-67k
-  else if (kwp <= 40) { refKwpMin = 3000; refKwpMax = 4800; }  // 33kWp ~ R$99k-158k
-  else                { refKwpMin = 2800; refKwpMax = 4500; }  // 50kWp+ leve economia escala
-
-  const refTotalMin = Math.round(kwp * refKwpMin);
-  const refTotalMax = Math.round(kwp * refKwpMax);
-  const refTotalMed = Math.round((refTotalMin + refTotalMax) / 2);
-  const refKwpMed   = Math.round((refKwpMin + refKwpMax) / 2);
-
   // ── Etapa 3: prompt estruturado ──────────────────────────────────────────
-  const prompt = `Você é um especialista em mercado de energia solar fotovoltaica no Brasil em 2026.
+  const prompt = `Você é um especialista em mercado de energia solar fotovoltaica no Brasil.
 
 SISTEMA ANALISADO:
 - Potência: ${kwpR} kWp | Localidade: ${cidade}/${estado}
 - Preço do integrador: R$ ${precoIntegrador?.toLocaleString('pt-BR') ?? 'não informado'}
 
-PREÇOS OFICIAIS DE MERCADO 2026 (chave na mão com instalação):
-- Faixa mínima: R$ ${refTotalMin.toLocaleString('pt-BR')}
-- Faixa máxima: R$ ${refTotalMax.toLocaleString('pt-BR')}
-- Média de mercado: R$ ${refTotalMed.toLocaleString('pt-BR')}
-- Preço médio/kWp: R$ ${refKwpMed.toLocaleString('pt-BR')}/kWp
-
-REGRA ABSOLUTA: Você DEVE usar os valores acima como faixa_min, faixa_max, media_regiao e preco_por_kwp no JSON.
-Não invente outros valores. Não use preços da internet. A busca abaixo serve APENAS para análise qualitativa da concorrência e mercado regional — nunca para sobrescrever os preços acima.
-
-CONTEXTO REGIONAL (qualitativo apenas):
+DADOS REAIS COLETADOS DA INTERNET (anúncios e cotações recentes):
 ${contexto}
+
+INSTRUÇÕES PARA ANÁLISE DE PREÇOS:
+- Use SOMENTE os preços encontrados nos dados acima — esses são preços reais praticados
+- Priorize anúncios de OLX, MercadoLivre, GetNinjas e Habitissimo pois têm preços de mercado real
+- Preços de instalação completa (chave na mão) incluem: equipamentos + mão de obra + projeto + homologação
+- Se encontrar apenas preços de equipamentos (sem instalação), adicione 40-60% para estimar chave na mão
+- Se os dados forem insuficientes ou contraditórios, indique confiabilidade "baixa" e use sua estimativa fundamentada
+- NÃO invente preços. Se não há dados, diga que não há dados suficientes na região
 
 Retorne APENAS JSON válido no formato:
 {
