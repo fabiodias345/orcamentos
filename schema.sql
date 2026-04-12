@@ -45,6 +45,7 @@ CREATE TABLE public.orcamentos (
     cliente_nome TEXT,
     valor_total NUMERIC,
     potencia_kwp NUMERIC,
+    dados_proposta JSONB,
     pdf_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );

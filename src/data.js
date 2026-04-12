@@ -11,6 +11,13 @@ export const Data = {
     return data;
   },
 
+  async resetPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) throw error;
+  },
+
   async signup(email, password) {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
@@ -29,7 +36,7 @@ export const Data = {
   },
 
   async checkSession() {
-    const { data, error } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
     if (data && data.session) {
       this.user = data.session.user;
       return true;
@@ -78,8 +85,42 @@ export const Data = {
 
   // ORÇAMENTOS
   async getOrcamentos() {
-    const { data, error } = await supabase.from('orcamentos').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('orcamentos')
+      .select('*')
+      .order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+
+    // Busca telefone/email dos clientes em batch
+    const clienteIds = [...new Set(data.map(o => o.cliente_id).filter(Boolean))];
+    let clientesMap = {};
+    if (clienteIds.length > 0) {
+      const { data: clientes } = await supabase
+        .from('clientes')
+        .select('id, tel, email')
+        .in('id', clienteIds);
+      if (clientes) clientes.forEach(c => { clientesMap[c.id] = c; });
+    }
+
+    return data.map(o => ({
+      ...o,
+      clientes: clientesMap[o.cliente_id] || null
+    }));
+  },
+
+  async deleteOrcamento(id) {
+    const { error } = await supabase.from('orcamentos').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async uploadPDF(blob, filename) {
+    const path = `pdfs/${this.user.id}/${filename}`;
+    const { error } = await supabase.storage.from('arquivos').upload(path, blob, {
+      contentType: 'application/pdf',
+      upsert: true
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from('arquivos').getPublicUrl(path);
+    return data.publicUrl;
   }
 };

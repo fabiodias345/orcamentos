@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
@@ -53,7 +52,10 @@
             </div>
             <button id="btn-login" class="btn-primary w-full py-4 rounded-xl mt-6 shadow-lg">ENTRAR NO SISTEMA</button>
           </div>
-          <p class="text-center text-slate-400 text-sm mt-6">
+          <p class="text-center text-slate-400 text-sm mt-4">
+            <a href="#" id="link-to-reset" class="text-slate-500 hover:text-yellow-400 transition-colors">Esqueci minha senha</a>
+          </p>
+          <p class="text-center text-slate-400 text-sm mt-2">
             Não tem conta? <a href="#" id="link-to-signup" class="text-yellow-400 font-bold hover:underline">Cadastre-se</a>
           </p>
         </div>
@@ -73,6 +75,39 @@
           <p class="text-center text-slate-400 text-sm mt-6">
             Já possui conta? <a href="#" id="link-to-login" class="text-yellow-400 font-bold hover:underline">Fazer Login</a>
           </p>
+        </div>
+
+        <div id="auth-reset-box" class="hidden">
+          <p class="text-slate-400 text-sm text-center mb-6">
+            Informe seu e-mail e enviaremos um link para redefinir sua senha.
+          </p>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">E-mail</label>
+              <input type="email" id="reset-email" class="input-glass w-full rounded-xl px-4 py-3" placeholder="seu@email.com">
+            </div>
+            <button id="btn-reset" class="btn-primary w-full py-4 rounded-xl mt-2 shadow-lg">ENVIAR LINK DE RECUPERAÇÃO</button>
+          </div>
+          <p class="text-center text-slate-400 text-sm mt-6">
+            <a href="#" id="link-back-to-login" class="text-yellow-400 font-bold hover:underline">Voltar ao login</a>
+          </p>
+        </div>
+
+        <div id="auth-newpass-box" class="hidden">
+          <p class="text-slate-400 text-sm text-center mb-6">
+            Defina sua nova senha de acesso ao sistema.
+          </p>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Nova Senha</label>
+              <input type="password" id="newpass-input" class="input-glass w-full rounded-xl px-4 py-3" placeholder="••••••••">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Confirmar Senha</label>
+              <input type="password" id="newpass-confirm" class="input-glass w-full rounded-xl px-4 py-3" placeholder="••••••••">
+            </div>
+            <button id="btn-newpass" class="btn-primary w-full py-4 rounded-xl mt-2 shadow-lg">SALVAR NOVA SENHA</button>
+          </div>
         </div>
 
         <div id="auth-message" class="mt-4 p-3 rounded-lg text-sm text-center hidden"></div>
