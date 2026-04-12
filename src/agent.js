@@ -1,9 +1,9 @@
 // ─── Agente de Inteligência de Mercado Solar ─────────────────────────────────
-// Usa Tavily (busca web) + MiniMax (análise) para varrer preços da
+// Usa Tavily (busca web) + Google Gemini Flash (análise) para varrer preços da
 // concorrência na região do cliente e posicionar o preço do integrador.
 
-const TAVILY_KEY   = import.meta.env.VITE_TAVILY_KEY;
-const MINIMAX_KEY  = import.meta.env.VITE_MINIMAX_KEY;
+const TAVILY_KEY  = import.meta.env.VITE_TAVILY_KEY;
+const GEMINI_KEY  = import.meta.env.VITE_GEMINI_KEY;
 
 // ─── Tavily: busca web orientada a agentes ────────────────────────────────────
 
@@ -26,39 +26,36 @@ async function tavilySearch(query, options = {}) {
   return res.json();
 }
 
-// ─── MiniMax: análise e estruturação dos dados ───────────────────────────────
+// ─── Google Gemini Flash: análise e estruturação dos dados ───────────────────
 
-async function minimaxAnalyze(prompt) {
-  const res = await fetch('https://api.minimaxi.chat/v1/chat/completions', {
+async function geminiAnalyze(prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${MINIMAX_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'MiniMax-Text-01',
-      messages: [
-        {
-          role: 'system',
-          content: 'Você é um analista de mercado de energia solar no Brasil. Responda SEMPRE com JSON válido, sem texto adicional, sem blocos de código markdown.'
-        },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.1,
-      max_tokens: 1024,
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 1024,
+        responseMimeType: 'application/json',  // força JSON puro, sem markdown
+      },
+      systemInstruction: {
+        parts: [{ text: 'Você é um analista de mercado de energia solar no Brasil. Responda SEMPRE com JSON válido, sem texto adicional, sem blocos de código markdown.' }]
+      },
     }),
   });
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    throw new Error(`MiniMax erro ${res.status}: ${err.slice(0, 200)}`);
+    throw new Error(`Gemini erro ${res.status}: ${err.slice(0, 200)}`);
   }
 
   const data = await res.json();
-  const raw  = data.choices?.[0]?.message?.content;
-  if (!raw) throw new Error('MiniMax não retornou conteúdo.');
+  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error('Gemini não retornou conteúdo.');
 
-  // Remove possíveis blocos ```json ... ```
   return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 }
 
@@ -149,7 +146,7 @@ Retorne APENAS JSON válido no formato:
   "baseado_em_referencia": <true se usou referência nacional por falta de dados locais>
 }`;
 
-  const jsonStr = await minimaxAnalyze(prompt);
+  const jsonStr = await geminiAnalyze(prompt);
   const analise = JSON.parse(jsonStr);
 
   // Injeta a lista de fontes reais encontradas
