@@ -85,9 +85,20 @@ export const Calc = {
       const hsp = parseFloat(hspStr);
       const ef = 0.83; // Eficiência N-type
       const kwpCalculado = (kwh / 30) / (hsp * ef);
-      document.getElementById('res-kwp').innerText = kwpCalculado.toFixed(2);
+      const res = kwpCalculado.toFixed(2);
+      
+      document.getElementById('res-kwp').innerText = res;
+      if (document.getElementById('res-kwp-local')) {
+        document.getElementById('res-kwp-local').innerText = res;
+      }
+      
       Calc.dadosAuais.kwh = kwh;
-      Calc.dadosAuais.kwp = kwpCalculado.toFixed(2);
+      Calc.dadosAuais.kwp = res;
+    } else {
+      document.getElementById('res-kwp').innerText = '0.00';
+      if (document.getElementById('res-kwp-local')) {
+        document.getElementById('res-kwp-local').innerText = '0.00';
+      }
     }
   }
 };

@@ -14,6 +14,10 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
 
+  <!-- Fundo global (visível em todas as telas) -->
+  <div class="app-bg-image"></div>
+  <div class="app-bg-overlay"></div>
+
   <div id="app-container">
     <!-- Componente de Carregamento -->
     <div id="loader" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center">
@@ -29,18 +33,25 @@
 
   <!-- Templates -->
   <template id="tpl-auth">
-    <div class="min-h-screen flex items-center justify-center p-4">
-      <div class="glass max-w-md w-full p-8 rounded-2xl animate-fade-in">
-        
-        <div class="text-center mb-8">
-          <div class="mx-auto w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center text-slate-900 text-3xl mb-4 shadow-xl shadow-yellow-400/20">
-            ☀
+    <div class="min-h-screen flex">
+
+      <!-- ESQUERDA: Painel de formulário -->
+      <div class="w-full md:w-[400px] shrink-0 flex flex-col justify-center px-10 py-12 bg-slate-950/95 backdrop-blur-2xl border-r border-white/5 relative z-10 animate-fade-in">
+
+        <!-- Logo -->
+        <div class="mb-10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center text-slate-900 text-xl shadow-lg shadow-yellow-400/30">
+              ☀
+            </div>
+            <span class="text-lg font-bold tracking-tight text-white">Solar<span class="text-yellow-400">PRO</span></span>
           </div>
-          <h2 class="text-3xl font-bold tracking-tight">Solar PRO</h2>
-          <p class="text-slate-400 mt-2" id="auth-subtitle">Acesso Restrito</p>
         </div>
 
+        <!-- Login -->
         <div id="auth-login-box">
+          <h2 class="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
+          <p class="text-slate-400 text-sm mb-8" id="auth-subtitle">Entre com sua conta para continuar</p>
           <div class="space-y-4">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">E-mail</label>
@@ -50,17 +61,20 @@
               <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Senha</label>
               <input type="password" id="login-pass" class="input-glass w-full rounded-xl px-4 py-3" placeholder="••••••••">
             </div>
-            <button id="btn-login" class="btn-primary w-full py-4 rounded-xl mt-6 shadow-lg">ENTRAR NO SISTEMA</button>
+            <button id="btn-login" class="btn-primary w-full py-4 rounded-xl mt-2 shadow-lg">ENTRAR NO SISTEMA</button>
           </div>
-          <p class="text-center text-slate-400 text-sm mt-4">
-            <a href="#" id="link-to-reset" class="text-slate-500 hover:text-yellow-400 transition-colors">Esqueci minha senha</a>
+          <p class="text-center text-slate-500 text-sm mt-4">
+            <a href="#" id="link-to-reset" class="hover:text-yellow-400 transition-colors">Esqueci minha senha</a>
           </p>
           <p class="text-center text-slate-400 text-sm mt-2">
             Não tem conta? <a href="#" id="link-to-signup" class="text-yellow-400 font-bold hover:underline">Cadastre-se</a>
           </p>
         </div>
 
+        <!-- Cadastro -->
         <div id="auth-signup-box" class="hidden">
+          <h2 class="text-2xl font-bold text-white mb-1">Criar conta</h2>
+          <p class="text-slate-400 text-sm mb-8">Preencha os dados para começar</p>
           <div class="space-y-4">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">E-mail</label>
@@ -70,17 +84,17 @@
               <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Senha</label>
               <input type="password" id="signup-pass" class="input-glass w-full rounded-xl px-4 py-3" placeholder="••••••••">
             </div>
-            <button id="btn-signup" class="btn-primary w-full py-4 rounded-xl mt-6 shadow-lg">CRIAR MINHA CONTA</button>
+            <button id="btn-signup" class="btn-primary w-full py-4 rounded-xl mt-2 shadow-lg">CRIAR MINHA CONTA</button>
           </div>
           <p class="text-center text-slate-400 text-sm mt-6">
             Já possui conta? <a href="#" id="link-to-login" class="text-yellow-400 font-bold hover:underline">Fazer Login</a>
           </p>
         </div>
 
+        <!-- Recuperar senha -->
         <div id="auth-reset-box" class="hidden">
-          <p class="text-slate-400 text-sm text-center mb-6">
-            Informe seu e-mail e enviaremos um link para redefinir sua senha.
-          </p>
+          <h2 class="text-2xl font-bold text-white mb-1">Recuperar senha</h2>
+          <p class="text-slate-400 text-sm mb-8">Enviaremos um link para seu e-mail.</p>
           <div class="space-y-4">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">E-mail</label>
@@ -93,10 +107,10 @@
           </p>
         </div>
 
+        <!-- Nova senha -->
         <div id="auth-newpass-box" class="hidden">
-          <p class="text-slate-400 text-sm text-center mb-6">
-            Defina sua nova senha de acesso ao sistema.
-          </p>
+          <h2 class="text-2xl font-bold text-white mb-1">Nova senha</h2>
+          <p class="text-slate-400 text-sm mb-8">Defina sua nova senha de acesso.</p>
           <div class="space-y-4">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Nova Senha</label>
@@ -112,41 +126,103 @@
 
         <div id="auth-message" class="mt-4 p-3 rounded-lg text-sm text-center hidden"></div>
       </div>
+
+      <!-- DIREITA: Branding -->
+      <div class="hidden md:flex flex-1 flex-col justify-end p-16 relative z-10">
+        <div class="animate-fade-in">
+          <p class="text-yellow-400 font-semibold tracking-[0.3em] uppercase text-xs mb-5">Sistema de Orçamentos Solares</p>
+          <h1 class="font-bold leading-none tracking-tight text-white mb-6" style="font-size: clamp(4rem, 8vw, 7rem);">
+            SOLAR<span class="text-yellow-400">PRO</span>
+          </h1>
+          <p class="text-slate-300 text-xl font-light leading-relaxed max-w-md mb-10">
+            Do dimensionamento à proposta aprovada.<br>
+            <span class="text-white font-semibold">Energia solar que gera resultado.</span>
+          </p>
+          <div class="flex items-center gap-8">
+            <div>
+              <p class="text-yellow-400 text-3xl font-bold">200+</p>
+              <p class="text-slate-500 text-xs uppercase tracking-widest mt-1">Cidades com HSP Real</p>
+            </div>
+            <div class="w-px h-10 bg-white/10"></div>
+            <div>
+              <p class="text-yellow-400 text-3xl font-bold">100%</p>
+              <p class="text-slate-500 text-xs uppercase tracking-widest mt-1">Precisão no Dimensionamento</p>
+            </div>
+            <div class="w-px h-10 bg-white/10"></div>
+            <div>
+              <p class="text-yellow-400 text-3xl font-bold">PDF</p>
+              <p class="text-slate-500 text-xs uppercase tracking-widest mt-1">Proposta Profissional</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </template>
 
   <template id="tpl-dashboard">
-    <div class="flex flex-col min-h-screen">
-      <!-- Navbar -->
-      <nav class="glass sticky top-0 z-40 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">☀</span>
-          <h1 class="text-xl font-bold tracking-tight">Solar <span class="text-yellow-400">PRO</span></h1>
-        </div>
-        <div class="flex items-center gap-6">
-          <div class="flex gap-4 border-b border-white/5">
-            <div class="nav-tab py-2 active" data-tab="empresa">Minha Empresa</div>
-            <div class="nav-tab py-2" data-tab="clientes">Clientes</div>
-            <div class="nav-tab py-2" data-tab="sizing">Dimensionamento</div>
-            <div class="nav-tab py-2" data-tab="orcamentos">Orçamentos</div>
-          </div>
-          <div class="bg-slate-800 h-8 w-px mx-2"></div>
+    <div class="flex h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <aside class="sidebar-shell h-full relative z-10 w-64 flex flex-col border-r border-white/5 bg-[#020617]">
+        <div class="p-8">
           <div class="flex items-center gap-3">
-            <div class="text-right hidden md:block">
-              <p class="text-xs text-slate-400 uppercase tracking-widest font-bold">Logado como</p>
-              <p class="text-sm font-semibold" id="nav-user-name">Usuário</p>
+            <div class="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-400/20">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.89 15.89 17.3 17.3"/><path d="m4.93 19.07 1.41-1.41"/><path d="M2 12h2"/><path d="M12 22v-2"/><circle cx="12" cy="12" r="4"/></svg>
             </div>
-            <button id="btn-logout" class="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors" title="Sair">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
+            <span class="text-xl font-bold tracking-tight text-white">Solar<span class="text-yellow-400">PRO</span></span>
           </div>
         </div>
-      </nav>
+
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+          <button data-tab="clientes" class="nav-tab sidebar-item flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all group active">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400">
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <span class="text-sm font-medium text-slate-400 group-hover:text-white group-[.active]:text-white transition-colors">Clientes</span>
+          </button>
+          <button data-tab="sizing" class="nav-tab sidebar-item flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all group">
+             <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400">
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v19"/><path d="M5 8h14"/><path d="M15 1l-3 3 3 3"/><path d="m9 23 3-3-3-3"/></svg>
+            </div>
+            <span class="text-sm font-medium text-slate-400 group-hover:text-white group-[.active]:text-white transition-colors">Dimensionamento</span>
+          </button>
+          <button data-tab="orcamentos" class="nav-tab sidebar-item flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all group">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-yellow-400/20 group-[.active]:bg-yellow-400">
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-yellow-400 group-[.active]:text-slate-900 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+            </div>
+            <span class="text-sm font-medium text-slate-400 group-hover:text-white group-[.active]:text-white transition-colors">Orçamentos</span>
+          </button>
+        </nav>
+
+        <div class="mt-auto px-6 py-8 border-t border-white/5 flex items-center justify-between">
+          <div class="flex items-center gap-3 overflow-hidden">
+            <div id="avatar-initial" class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-yellow-600 flex items-center justify-center text-slate-900 font-bold uppercase">
+              U
+            </div>
+            <div class="min-w-0">
+              <p id="nav-user-name" class="text-xs font-bold text-white truncate">Usuário</p>
+              <button id="btn-logout" class="text-[10px] text-slate-500 hover:text-yellow-400 transition-colors text-left uppercase tracking-wider font-bold">Sair</button>
+            </div>
+          </div>
+          <button id="btn-settings" class="text-slate-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </aside>
     
       <!-- Content Container -->
-      <main class="flex-1 p-6 max-w-7xl mx-auto w-full">
-        <div id="tab-content" class="animate-fade-in">
-          <!-- Injetado via JS -->
+      <main class="flex-1 flex flex-col min-h-screen bg-[#020617] relative overflow-hidden">
+        <div class="app-bg-image"></div>
+        <div class="app-bg-overlay"></div>
+        <header class="h-20 px-10 flex justify-between items-center border-b border-white/5 sticky top-0 bg-[#020617]/80 backdrop-blur-xl z-30">
+          <h2 class="text-lg font-bold tracking-tight" id="active-tab-title">Minha Empresa</h2>
+          <div id="header-actions"></div>
+        </header>
+
+        <div class="flex-1 p-10 overflow-auto relative z-10">
+          <div id="tab-content" class="animate-slide-up">
+            <!-- Injetado via JS -->
+          </div>
         </div>
       </main>
     </div>

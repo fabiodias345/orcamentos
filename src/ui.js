@@ -2,7 +2,7 @@ import { Data } from './data.js';
 import { Calc, HSP_CIDADES } from './sizing.js';
 
 export const AppState = {
-  activeTab: 'empresa',
+  activeTab: 'clientes',
   clientes: [],
   propostaItems: [],
   propostaTotal: 0
@@ -23,12 +23,19 @@ export const Router = {
       container.appendChild(tpl);
       
       document.getElementById('nav-user-name').innerText = Data.user?.email || 'Usuário';
+      document.getElementById('avatar-initial').innerText = (Data.user?.email || 'U').charAt(0).toUpperCase();
 
       // Attach tab events
       document.querySelectorAll('.nav-tab').forEach(el => {
         el.addEventListener('click', (e) => {
-          Router.to(e.target.dataset.tab);
+          const tab = e.currentTarget.dataset.tab;
+          Router.to(tab);
         });
+      });
+
+      // Attach settings event
+      document.getElementById('btn-settings').addEventListener('click', () => {
+        Router.to('empresa');
       });
 
       // Attach logout event
@@ -46,14 +53,32 @@ export const Router = {
   to: (tab) => {
     AppState.activeTab = tab;
     Router.renderTab(tab);
+    
+    // Update active state in sidebar
     document.querySelectorAll('.nav-tab').forEach(el => {
-      el.classList.remove('active');
-      if (el.dataset.tab === tab) el.classList.add('active');
+      el.classList.remove('active', 'bg-white/10', 'text-yellow-400');
+      if (el.dataset.tab === tab) {
+        el.classList.add('active', 'bg-white/10', 'text-yellow-400');
+      }
     });
+
+    // Update Header Title
+    const titles = {
+      'empresa': 'Empresa',
+      'clientes': 'Gestão de Clientes',
+      'sizing': 'Dimensionamento',
+      'orcamentos': 'Orçamentos'
+    };
+    document.getElementById('active-tab-title').innerText = titles[tab] || tab;
   },
   renderTab: (tab) => {
     const container = document.getElementById('tab-content');
-    container.innerHTML = `<div class="p-12 text-center text-slate-500">Carregando...</div>`;
+    container.innerHTML = `
+      <div class="flex flex-col items-center justify-center p-20 text-slate-500 animate-pulse">
+        <div class="w-12 h-12 border-2 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin mb-4"></div>
+        <p class="text-xs font-bold uppercase tracking-widest">Carregando Seção...</p>
+      </div>
+    `;
     switch (tab) {
       case 'empresa': UI.renderEmpresa(); break;
       case 'clientes': UI.renderClientes(); break;
@@ -70,18 +95,62 @@ export const UI = {
     try {
       const d = await Data.getEmpresa() || {};
       container.innerHTML = `
-        <div class="glass p-8 rounded-2xl max-w-2xl mx-auto animate-fade-in">
-          <h2 class="text-2xl font-bold mb-6 text-yellow-400">Minha Empresa</h2>
-          <div class="space-y-4">
-            <input type="text" id="emp-nome" placeholder="Nome Comercial" class="input-glass p-3 rounded-lg w-full" value="${d.nome || ''}">
-            <div class="grid grid-cols-2 gap-4">
-              <input type="text" id="emp-cnpj" placeholder="CNPJ" class="input-glass p-3 rounded-lg" value="${d.cnpj || ''}">
-              <input type="text" id="emp-tel" placeholder="Telefone" class="input-glass p-3 rounded-lg" value="${d.tel || ''}">
+        <div class="glass p-10 rounded-3xl max-w-4xl mx-auto shadow-2xl relative overflow-hidden border border-white/5">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 blur-[100px] pointer-events-none"></div>
+          
+          <div class="flex items-center gap-4 mb-10">
+            <div class="w-12 h-12 bg-yellow-400/10 rounded-2xl flex items-center justify-center text-yellow-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
             </div>
-            <input type="text" id="emp-email" placeholder="E-mail" class="input-glass p-3 rounded-lg w-full" value="${d.email || ''}">
-            <input type="text" id="emp-end" placeholder="Endereço Completo" class="input-glass p-3 rounded-lg w-full" value="${d.endereco || ''}">
-            <input type="text" id="emp-logo" placeholder="URL da Logomarca (Png/Jpg)" class="input-glass p-3 rounded-lg w-full" value="${d.logo || ''}">
-            <button id="btn-save-emp" class="btn-primary w-full py-3 rounded-xl mt-4">SALVAR MINHA EMPRESA</button>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight">Identidade Corporativa</h2>
+              <p class="text-slate-500 text-sm">Configure como sua empresa aparece nos orçamentos e propostas.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="space-y-6">
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Nome Comercial</label>
+                <input type="text" id="emp-nome" placeholder="Ex: SolarTech Solutions" class="input-glass w-full" value="${d.nome || ''}">
+              </div>
+              <div class="grid grid-cols-1 gap-6">
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">CNPJ</label>
+                  <input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00" class="input-glass w-full" value="${d.cnpj || ''}">
+                </div>
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Telefone de Contato</label>
+                  <input type="text" id="emp-tel" placeholder="(00) 00000-0000" class="input-glass w-full" value="${d.tel || ''}">
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">E-mail Corporativo</label>
+                <input type="text" id="emp-email" placeholder="contato@empresa.com" class="input-glass w-full" value="${d.email || ''}">
+              </div>
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Logomarca (URL)</label>
+                <div class="flex gap-4 items-start">
+                  <input type="text" id="emp-logo" placeholder="https://..." class="input-glass flex-1" value="${d.logo || ''}">
+                  ${d.logo ? `<div class="w-12 h-12 rounded-lg bg-white/5 border border-white/10 p-1 flex items-center justify-center overflow-hidden"><img src="${d.logo}" class="max-w-full max-h-full object-contain"></div>` : ''}
+                </div>
+              </div>
+            </div>
+
+            <div class="md:col-span-2 space-y-2">
+              <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Endereço da Sede</label>
+              <input type="text" id="emp-end" placeholder="Rua, Número, Bairro, Cidade - UF" class="input-glass w-full" value="${d.endereco || ''}">
+            </div>
+          </div>
+
+          <div class="mt-12 flex justify-end gap-4 border-t border-white/5 pt-10">
+            <button id="btn-save-emp" class="btn-primary flex items-center gap-2 group">
+              <span>Salvar Alterações</span>
+              <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
           </div>
         </div>
       `;
@@ -110,53 +179,95 @@ export const UI = {
 
   // ---------- ABA CLIENTES ----------
   async renderClientes() {
+    document.getElementById('header-actions').innerHTML = `
+      <button id="btn-open-add-cli" class="btn-primary text-sm h-10 px-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Cliente
+      </button>
+    `;
+
     document.getElementById('tab-content').innerHTML = `
-      <div class="glass p-8 rounded-2xl mb-8">
-          <h2 class="text-xl font-bold mb-6 text-yellow-400">Cadastrar/Editar Cliente</h2>
-          <input type="hidden" id="cli-id" value="">
-          <div class="space-y-6">
-            <div>
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Informações Pessoais</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="flex flex-col"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NOME COMPLETO</label><input type="text" id="cli-nome" placeholder="Ex: João da Silva" class="input-glass p-3 rounded-lg text-white"></div>
-                  <div class="flex flex-col"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">E-MAIL</label><input type="email" id="cli-email" placeholder="email@cliente.com" class="input-glass p-3 rounded-lg text-white"></div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div class="flex flex-col"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">WHATSAPP / TELEFONE</label><input type="text" id="cli-tel" placeholder="(43) 99999-9999" class="input-glass p-3 rounded-lg text-white"></div>
-                </div>
+      <div id="cli-form-container" class="hidden mb-12">
+        <div class="glass p-8 rounded-3xl border border-yellow-500/20 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-400/5 blur-3xl"></div>
+            <div class="flex justify-between items-center mb-8">
+              <h2 class="text-xl font-bold tracking-tight">Ficha do Cliente</h2>
+              <button onclick="document.getElementById('cli-form-container').classList.add('hidden')" class="text-slate-500 hover:text-white p-2">✕</button>
             </div>
-            <div>
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 mt-6 border-b border-white/5 pb-2">Localização</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div class="flex flex-col"><label class="text-xs text-yellow-500/80 mb-1 ml-1 font-semibold">CEP (Digite para preencher)</label><input type="text" id="cli-cep" placeholder="00000-000" class="input-glass p-3 rounded-lg font-bold text-yellow-400"></div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  <div class="flex flex-col md:col-span-9"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">RUA / LOGRADOURO</label><input type="text" id="cli-rua" placeholder="Nome da Rua" class="input-glass p-3 rounded-lg text-white"></div>
-                  <div class="flex flex-col md:col-span-3"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NÚMERO</label><input type="text" id="cli-num" placeholder="123" class="input-glass p-3 rounded-lg text-white"></div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
-                  <div class="flex flex-col md:col-span-4"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">BAIRRO</label><input type="text" id="cli-bairro" placeholder="Bairro" class="input-glass p-3 rounded-lg text-white"></div>
-                  <div class="flex flex-col md:col-span-6"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">CIDADE</label><input type="text" id="cli-cidade" placeholder="Cidade" class="input-glass p-3 rounded-lg text-white"></div>
-                  <div class="flex flex-col md:col-span-2"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">UF</label><input type="text" id="cli-uf" placeholder="PR" class="input-glass p-3 rounded-lg text-white"></div>
-                </div>
+            <input type="hidden" id="cli-id" value="">
+            <div class="space-y-8">
+              <div>
+                  <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Informações de Contato</h3>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">Nome Completo</label><input type="text" id="cli-nome" placeholder="Ex: João da Silva" class="input-glass w-full"></div>
+                    <div class="space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">E-mail</label><input type="email" id="cli-email" placeholder="email@cliente.com" class="input-glass w-full"></div>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">WhatsApp / Telefone</label><input type="text" id="cli-tel" placeholder="(43) 99999-9999" class="input-glass w-full"></div>
+                  </div>
+              </div>
+              <div>
+                  <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Localização Técnica</h3>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="space-y-2"><label class="text-xs text-yellow-500/80 font-bold ml-1 tracking-wider uppercase">CEP de Instalação</label><input type="text" id="cli-cep" placeholder="00000-000" class="input-glass w-full font-bold text-yellow-500 placeholder:text-yellow-900/50"></div>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    <div class="md:col-span-9 space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">Logradouro</label><input type="text" id="cli-rua" placeholder="Rua/Avenida" class="input-glass w-full"></div>
+                    <div class="md:col-span-3 space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">Número</label><input type="text" id="cli-num" placeholder="123" class="input-glass w-full"></div>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mt-6">
+                    <div class="md:col-span-4 space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">Bairro</label><input type="text" id="cli-bairro" placeholder="Bairro" class="input-glass w-full"></div>
+                    <div class="md:col-span-6 space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">Cidade</label><input type="text" id="cli-cidade" placeholder="Cidade" class="input-glass w-full"></div>
+                    <div class="md:col-span-2 space-y-2"><label class="text-xs text-slate-500 font-semibold ml-1">UF</label><input type="text" id="cli-uf" placeholder="PR" class="input-glass w-full"></div>
+                  </div>
+              </div>
+              <div class="flex gap-4 pt-4">
+                <button id="btn-save-cli" class="btn-primary flex-1">Confirmar e Salvar</button>
+                <button id="btn-clean-cli" class="px-8 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all">Cancelar</button>
+              </div>
             </div>
-            <div class="flex space-x-4">
-              <button id="btn-save-cli" class="btn-primary flex-1 py-4 rounded-xl mt-8 text-sm font-bold">SALVAR CLIENTE</button>
-              <button id="btn-clean-cli" class="py-4 px-6 rounded-xl mt-8 text-sm font-bold border border-white/10 hover:bg-white/5">LIMPAR / NOVO</button>
-            </div>
-          </div>
+        </div>
       </div>
-      <div class="glass p-8 rounded-2xl">
-        <h2 class="text-xl font-bold mb-6 text-yellow-400">Meus Clientes Cadastrados</h2>
-        <table class="w-full text-left">
-          <thead><tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-white/5"><th class="pb-3">Nome</th><th class="pb-3">Contato</th><th class="pb-3">Endereço</th><th class="pb-3">Ações</th></tr></thead>
-          <tbody id="lista-clientes"><tr><td colspan="4" class="py-4 text-center text-slate-500">Carregando...</td></tr></tbody>
-        </table>
+
+      <div class="glass rounded-3xl overflow-hidden border border-white/5 animate-slide-up">
+        <header class="px-8 py-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40">
+          <div>
+            <h2 class="text-lg font-bold tracking-tight">Meus Clientes</h2>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">Gerencie os interessados e leads do sistema.</p>
+          </div>
+          <div class="relative w-full md:w-64">
+            <input type="text" id="cli-search" placeholder="Pesquisar cliente..." class="w-full bg-white/5 border border-white/10 rounded-full px-4 py-2 text-xs focus:ring-1 focus:ring-yellow-400 outline-none transition-all">
+          </div>
+        </header>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[10px] uppercase tracking-[0.1em] font-bold text-slate-500 bg-slate-900/60">
+                <th class="px-8 py-4 font-bold border-b border-white/5 w-1/3">Identificação</th>
+                <th class="px-8 py-4 font-bold border-b border-white/5">Canal de Contato</th>
+                <th class="px-8 py-4 font-bold border-b border-white/5">Localidade</th>
+                <th class="px-8 py-4 font-bold border-b border-white/5 text-right whitespace-nowrap">Ações de Gestão</th>
+              </tr>
+            </thead>
+            <tbody id="lista-clientes" class="divide-y divide-white/[0.03]">
+              <!-- Gerado via JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
 
+    document.getElementById('btn-open-add-cli').addEventListener('click', () => {
+      UI.limparFormCliente();
+      document.getElementById('cli-form-container').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
     document.getElementById('btn-save-cli').addEventListener('click', () => UI.saveCliente());
-    document.getElementById('btn-clean-cli').addEventListener('click', () => UI.limparFormCliente());
+    document.getElementById('btn-clean-cli').addEventListener('click', () => {
+      document.getElementById('cli-form-container').classList.add('hidden');
+    });
     
     const cepInput = document.getElementById('cli-cep');
     cepInput.addEventListener('keyup', () => { if(cepInput.value.replace(/\D/g,'').length>=8) UI.fetchCEP() });
@@ -171,21 +282,50 @@ export const UI = {
       AppState.clientes = list;
       let h = '';
       if (list.length === 0) {
-        h = '<tr><td colspan="4" class="py-4 text-center text-slate-500">Nenhum cliente cadastrado ainda.</td></tr>';
+        h = '<tr><td colspan="4" class="p-16 text-center text-slate-600 font-medium">Nenhum cliente cadastrado ainda.</td></tr>';
       } else {
         h = list.map(c => {
-          const contato = (c.tel||'') + (c.email ? '<br><span class="text-xs text-blue-400">' + c.email + '</span>' : '');
-          const acoes = `<button data-action="edit" data-id="${c.id}" class="text-xs mr-3 text-blue-400 hover:text-blue-300 uppercase font-bold">Editar</button><button data-action="del" data-id="${c.id}" class="text-xs text-red-500 hover:text-red-400 uppercase font-bold">Deletar</button>`;
-          return `<tr class="border-b border-white/5 hover:bg-white/5"><td class="py-4 font-semibold text-white">${c.nome}</td><td class="py-4 text-slate-400">${contato}</td><td class="py-4 text-slate-400 max-w-xs truncate" title="${c.endereco || ''}">${c.endereco || ''}</td><td class="py-4">${acoes}</td></tr>`;
+          const initials = c.nome.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+          const acoes = `
+            <div class="flex justify-end gap-2">
+              <button data-action="edit" data-id="${c.id}" class="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-blue-400 transition-all border border-white/5">✏️</button>
+              <button data-action="del" data-id="${c.id}" class="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-red-400 transition-all border border-white/5">🗑️</button>
+            </div>
+          `;
+          return `
+            <tr class="data-table-row group">
+              <td class="px-8 py-5">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center text-xs font-bold text-slate-300">${initials}</div>
+                  <div>
+                    <p class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">${c.nome}</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">ID: ${c.id.substring(0,8)}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-8 py-5">
+                <p class="text-sm font-medium text-slate-300">${c.tel || '–'}</p>
+                <p class="text-xs text-blue-500/80 font-medium truncate max-w-[180px]">${c.email || '–'}</p>
+              </td>
+              <td class="px-8 py-5">
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-yellow">📍</span>
+                  <p class="text-xs text-slate-400 font-medium truncate max-w-[200px]" title="${c.endereco || ''}">${c.endereco || 'Endereço não informado'}</p>
+                </div>
+              </td>
+              <td class="px-8 py-5">${acoes}</td>
+            </tr>
+          `;
         }).join('');
       }
       document.getElementById('lista-clientes').innerHTML = h;
 
       document.querySelectorAll('#lista-clientes button').forEach(b => {
         b.addEventListener('click', (e) => {
-          const id = e.target.dataset.id;
-          if (e.target.dataset.action === 'edit') UI.editCliente(id);
-          if (e.target.dataset.action === 'del') UI.deleteCliente(id);
+          const target = e.currentTarget;
+          const id = target.dataset.id;
+          if (target.dataset.action === 'edit') UI.editCliente(id);
+          if (target.dataset.action === 'del') UI.deleteCliente(id);
         });
       });
     } catch (e) {
@@ -281,216 +421,286 @@ export const UI = {
 
   // ---------- ABA DIMENSIONAMENTO ----------
   async renderSizing() {
-    // Garante que clientes estao carregados
     if (AppState.clientes.length === 0) {
       AppState.clientes = await Data.getClientes() || [];
     }
 
     const optEstados = Object.keys(HSP_CIDADES).map(e => `<option value="${e}">${e}</option>`).join('');
-
-    let optClientes = '<option value="">Selecione um cliente cadastrado...</option>';
+    let optClientes = '<option value="">Vincular a um cliente existente...</option>';
     if (AppState.clientes.length > 0) {
       optClientes += AppState.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
     }
 
-    document.getElementById('tab-content').innerHTML = `
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div class="lg:col-span-2 space-y-8">
-          <div class="glass p-8 rounded-2xl">
-              <h2 class="text-xl font-bold mb-6 text-yellow-400">Atribuir a um Cliente</h2>
-              <select id="prop-cliente-select" class="input-glass p-4 rounded-xl w-full text-white font-semibold mb-6">
-                ${optClientes}
-              </select>
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div class="md:col-span-12"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">NOME</label><input type="text" id="prop-cliente-nome" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled></div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
-                <div class="md:col-span-9"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">RUA</label><input type="text" id="prop-cliente-rua" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled></div>
-                <div class="md:col-span-3"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">Nº</label><input type="text" id="prop-cliente-num" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled></div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
-                <div class="md:col-span-5"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">BAIRRO</label><input type="text" id="prop-cliente-bairro" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled></div>
-                <div class="md:col-span-5"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">CIDADE</label><input type="text" id="prop-cliente-cidade" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled></div>
-                <div class="md:col-span-2"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">UF</label><input type="text" id="prop-cliente-uf" class="input-glass p-3 rounded-lg bg-white/5 opacity-70 w-full" disabled></div>
-              </div>
-          </div>
+    document.getElementById('header-actions').innerHTML = `
+      <div class="flex gap-3">
+        <button id="btn-salvar-orc-topo" class="px-6 h-10 rounded-xl bg-yellow-400 hover:bg-white text-slate-950 font-bold text-xs transition-all shadow-lg shadow-yellow-400/10 uppercase tracking-wider">
+          Gerar Proposta PDF
+        </button>
+      </div>
+    `;
 
-          <div class="glass p-8 rounded-2xl">
-            <h2 class="text-xl font-bold mb-6 text-yellow-400">Dados do Projeto</h2>
+    document.getElementById('tab-content').innerHTML = `
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-10">
+        
+        <!-- Formulário de Engenharia -->
+        <div class="xl:col-span-8 space-y-10">
+          
+          <!-- Seção 1: Cliente e Localização -->
+          <section class="glass p-8 rounded-3xl border border-white/5 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+              <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            
+            <header class="mb-8">
+              <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-2 block">Passo 01</span>
+              <h3 class="text-xl font-bold tracking-tight">Definição do Cliente</h3>
+            </header>
+
             <div class="space-y-6">
-              <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Consumo Médio Atual (kWh/mês)</label>
-                <input type="number" id="calc-kwh" class="input-glass w-full p-4 rounded-xl text-2xl font-bold text-yellow-400" placeholder="Ex: 600">
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Selecionar Cliente</label>
+                <select id="prop-cliente-select" class="input-glass w-full text-sm font-semibold h-12">
+                  ${optClientes}
+                </select>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Estado</label>
-                  <select id="calc-estado" class="input-glass w-full p-4 rounded-xl">
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Estado de Instalação</label>
+                  <select id="calc-estado" class="input-glass w-full h-12">
                     <option value="">Selecione o Estado...</option>
                     ${optEstados}
                   </select>
                 </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Cidade</label>
-                  <select id="calc-cidade" class="input-glass w-full p-4 rounded-xl" disabled>
-                    <option value="">Primeiro selecione o estado...</option>
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Cidade / Índice Irradiação (HSP)</label>
+                  <select id="calc-cidade" class="input-glass w-full h-12" disabled>
+                    <option value="">Aguardando estado...</option>
                   </select>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        <div class="glass p-8 rounded-2xl sticky top-24 self-start space-y-6">
-          <!-- Resultado kWp -->
-          <div>
-            <h3 class="text-lg font-bold mb-4 uppercase text-slate-400 border-b border-white/5 pb-2">Resultado</h3>
-            <div class="space-y-4">
+          <!-- Seção 2: Consumo e Necessidade -->
+          <section class="glass p-8 rounded-3xl border border-white/5 relative overflow-hidden group">
+             <div class="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+              <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 4.6a10 10 0 1 1-12.8 0"/></svg>
+            </div>
+
+            <header class="mb-8">
+              <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-2 block">Passo 02</span>
+              <h3 class="text-xl font-bold tracking-tight">Análise de Consumo</h3>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <p class="text-xs uppercase font-bold text-slate-400 mb-2">Pela localidade, o cliente precisa de:</p>
-                <div class="text-4xl font-bold text-yellow-500"><span id="res-kwp">0.00</span> <span class="text-xl">kWp</span></div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-[0.1em] mb-4">Consumo Médio Mensal</label>
+                <div class="relative">
+                  <input type="number" id="calc-kwh" class="w-full bg-slate-900/50 border-2 border-white/5 rounded-2xl p-6 text-4xl font-bold text-yellow-400 focus:border-yellow-400/50 outline-none transition-all placeholder:text-slate-800" placeholder="000">
+                  <span class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-xl uppercase tracking-widest">kWh</span>
+                </div>
               </div>
-              <div class="p-4 bg-white/5 rounded-xl text-sm text-center text-slate-400">
-                <p>O dimensionamento calcula a potência do arranjo fotovoltaico necessário para suprir o consumo mensal.</p>
+
+              <div class="glass bg-yellow-400/[0.03] border-yellow-400/20 p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Potência de Pico Necessária</span>
+                <div class="flex items-baseline gap-2">
+                  <span id="res-kwp-local" class="text-5xl font-bold text-white tracking-tighter">0.00</span>
+                  <span class="text-xl font-bold text-yellow-400">kWp</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2 font-medium">Dimensionamento Técnico Sugerido</p>
               </div>
             </div>
-          </div>
-
-          <!-- Agente de Inteligência de Mercado -->
-          <div class="border-t border-white/10 pt-5">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-base">🤖</span>
-              <h3 class="text-sm font-bold uppercase text-slate-400 tracking-wider">Inteligência de Mercado</h3>
-              <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold">INTERNO</span>
-            </div>
-            <p class="text-xs text-slate-500 mb-3">Varre a internet em tempo real para comparar seu preço com a concorrência na região.</p>
-
-            <button id="btn-analisar-mercado"
-              class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-bold transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <span>🔍</span> Analisar Mercado
-            </button>
-
-            <!-- Status da busca -->
-            <div id="agente-status" class="hidden mt-3 text-xs text-center text-blue-400 py-2 px-3 rounded-lg bg-blue-500/10 animate-pulse"></div>
-
-            <!-- Resultado do agente -->
-            <div id="agente-resultado" class="hidden mt-4 space-y-3"></div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- GERADOR DE PROPOSTAS -->
-      <div class="glass p-8 rounded-2xl animate-fade-in mt-8 w-full border border-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-        <h2 class="text-2xl font-bold mb-2 text-yellow-400">Construtor da Proposta</h2>
-        <p class="text-sm text-slate-400 mb-6">Importe os itens da distribuidora e defina sua margem e custos de venda (Chave na Mão).</p>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <!-- ITENS -->
-          <div class="space-y-4">
-            <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">1. Lista de Materiais</h3>
             
-            <div class="space-y-2">
-              <label class="text-xs text-yellow-500/80 mb-1 ml-1 font-semibold">Importe o orçamento da Distribuidora</label>
-              <label id="label-img-import" class="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-yellow-500/50 hover:bg-yellow-500/5 transition-all">
-                <span class="text-2xl mb-1">📄</span>
-                <span class="text-xs text-slate-400">Clique, arraste ou <kbd class="bg-white/10 px-1 py-0.5 rounded text-xs">Ctrl+V</kbd> para colar</span>
-                <span class="text-xs text-slate-600 mt-1">PDF, JPG ou PNG</span>
-                <input type="file" id="input-img-import" accept="image/jpeg,image/jpg,image/png,application/pdf" class="hidden">
+            <div class="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-3">
+              <span class="text-lg bg-blue-500/10 w-8 h-8 rounded-lg flex items-center justify-center">💡</span>
+              <p class="text-xs text-slate-400 leading-relaxed pt-1">
+                  <b>Nota Técnica:</b> O cálculo utiliza uma eficiência global de 83% (padrão para módulos N-Type) e o índice solarimétrico médio da cidade selecionada para determinar a potência de pico (kWp) necessária.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Seção 3: Itens da Proposta -->
+          <section class="glass p-8 rounded-3xl border border-yellow-500/10 relative overflow-hidden bg-slate-900/10">
+            <header class="mb-8 flex justify-between items-center">
+              <div>
+                <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-2 block">Passo 03</span>
+                <h3 class="text-xl font-bold tracking-tight text-white">Composição de Equipamentos</h3>
+              </div>
+              <div id="ocr-status" class="hidden text-[10px] font-bold text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full animate-pulse border border-blue-500/20"></div>
+            </header>
+
+            <div class="space-y-6">
+              <label id="label-img-import" class="group flex flex-col items-center justify-center w-full p-8 border-2 border-dashed border-white/10 rounded-3xl cursor-pointer hover:border-yellow-400/30 hover:bg-yellow-400/5 transition-all">
+                <div class="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-yellow-400/10 transition-all mb-3 text-slate-400">⚡</div>
+                <div class="text-center">
+                  <p class="text-sm font-bold text-white mb-1">Importar Orçamento da Distribuidora</p>
+                  <p class="text-xs text-slate-500">Cole uma imagem (Ctrl+V) ou arraste o PDF oficial para extração inteligente.</p>
+                </div>
+                <input type="file" id="input-img-import" accept="image/*,application/pdf" class="hidden">
               </label>
-              <div id="ocr-status" class="hidden text-xs text-center py-2 px-3 rounded-lg bg-white/5 text-slate-400"></div>
-            </div>
 
-            <div class="mt-4 border border-white/10 rounded-xl overflow-hidden bg-white/5">
-              <table class="w-full text-left text-sm">
-                <thead><tr class="bg-black/20 text-slate-400 text-xs uppercase"><th class="p-3 w-16">Qtd</th><th class="p-3">Descrição do Equipamento</th><th class="p-3 w-10"></th></tr></thead>
-                <tbody id="lista-materiais">
-                  <!-- Gerado JS -->
-                </tbody>
-              </table>
+              <div class="border border-white/5 rounded-2xl bg-black/20 overflow-hidden">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="bg-white/5 text-slate-500 uppercase font-bold tracking-wider">
+                      <th class="px-6 py-4 w-16">Qtd</th>
+                      <th class="px-6 py-4">Descrição do Equipamento</th>
+                      <th class="px-6 py-4 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="lista-materiais" class="divide-y divide-white/5"></tbody>
+                </table>
+              </div>
+
+              <div class="flex gap-3">
+                <input type="number" id="mat-add-qtd" placeholder="Qty" class="input-glass w-20 text-center font-bold">
+                <input type="text" id="mat-add-desc" placeholder="Adicionar item ou acessório manual..." class="input-glass flex-1 font-medium italic">
+                <button id="btn-add-mat" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all border border-white/10 flex items-center justify-center">＋</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Seção 4: Financeiro -->
+          <section class="glass p-8 rounded-3xl border border-white/5 relative overflow-hidden group">
+            <header class="mb-8">
+              <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-2 block">Passo 04</span>
+              <h3 class="text-xl font-bold tracking-tight">Custos e Preço de Venda</h3>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Custo do Kit (Distribuidora)</label>
+                <div class="flex items-center bg-slate-950/50 border border-white/10 rounded-xl overflow-hidden focus-within:border-yellow-400/40 transition-all group/input">
+                  <div class="px-4 py-3 bg-white/5 border-r border-white/5 text-slate-500 font-bold text-xs group-focus-within/input:text-yellow-400/70 transition-colors">R$</div>
+                  <input type="number" id="prop-custo-kit" class="bg-transparent border-none w-full p-3 font-bold text-white outline-none prop-calc" placeholder="0,00">
+                </div>
+              </div>
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Serviços e Instalação</label>
+                <div class="flex items-center bg-slate-950/50 border border-white/10 rounded-xl overflow-hidden focus-within:border-yellow-400/40 transition-all group/input">
+                  <div class="px-4 py-3 bg-white/5 border-r border-white/5 text-slate-500 font-bold text-xs group-focus-within/input:text-yellow-400/70 transition-colors">R$</div>
+                  <input type="number" id="prop-custo-mo" class="bg-transparent border-none w-full p-3 font-bold text-white outline-none prop-calc" placeholder="0,00">
+                </div>
+              </div>
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Engenharia e Taxas</label>
+                <div class="flex items-center bg-slate-950/50 border border-white/10 rounded-xl overflow-hidden focus-within:border-yellow-400/40 transition-all group/input">
+                  <div class="px-4 py-3 bg-white/5 border-r border-white/5 text-slate-500 font-bold text-xs group-focus-within/input:text-yellow-400/70 transition-colors">R$</div>
+                  <input type="number" id="prop-custo-eng" class="bg-transparent border-none w-full p-3 font-bold text-white outline-none prop-calc" placeholder="0,00">
+                </div>
+              </div>
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Logística / Extras</label>
+                <div class="flex items-center bg-slate-950/50 border border-white/10 rounded-xl overflow-hidden focus-within:border-yellow-400/40 transition-all group/input">
+                  <div class="px-4 py-3 bg-white/5 border-r border-white/5 text-slate-500 font-bold text-xs group-focus-within/input:text-yellow-400/70 transition-colors">R$</div>
+                  <input type="number" id="prop-custo-extra" class="bg-transparent border-none w-full p-3 font-bold text-white outline-none prop-calc" placeholder="0,00">
+                </div>
+              </div>
             </div>
             
-            <div class="flex gap-2 mt-2">
-              <input type="number" id="mat-add-qtd" placeholder="Qtd" class="input-glass p-2 rounded-lg w-20 text-center">
-              <input type="text" id="mat-add-desc" placeholder="Adicionar item manualmente..." class="input-glass p-2 rounded-lg flex-1">
-              <button id="btn-add-mat" class="py-2 px-4 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold">+</button>
+            <div class="mt-10 p-4 border border-blue-500/10 bg-blue-500/5 rounded-2xl flex items-center justify-between">
+              <span class="text-xs font-bold text-blue-400 uppercase tracking-widest">Valor da Conta do Cliente</span>
+              <div class="flex items-center bg-slate-950/50 border border-white/10 rounded-lg overflow-hidden focus-within:border-blue-400/50 transition-all w-40">
+                <div class="px-3 py-2 bg-white/5 border-r border-white/5 text-blue-600 font-bold text-[10px]">R$</div>
+                <input type="number" id="prop-conta-energia" class="bg-transparent border-none w-full p-2 text-sm font-bold text-blue-400 outline-none" placeholder="0,00">
+              </div>
             </div>
-          </div>
+          </section>
 
-          <!-- FINANCEIRO -->
-          <div class="space-y-4">
-            <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">2. Composição do Preço Final</h3>
+          <div class="h-20"></div> <!-- Espaço buffer -->
+        </div>
+
+        <!-- Barra Lateral de Resultados -->
+        <div class="xl:col-span-4 space-y-8">
+          <div class="sticky top-28 space-y-8">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="flex flex-col"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">Distr. / Custo do Kit (R$)</label>
-                <input type="number" id="prop-custo-kit" class="input-glass p-3 rounded-lg font-bold text-white prop-calc" placeholder="0.00"></div>
-              <div class="flex flex-col"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">Mão de Obra (R$)</label>
-                <input type="number" id="prop-custo-mo" class="input-glass p-3 rounded-lg font-bold text-white prop-calc" placeholder="0.00"></div>
-              <div class="flex flex-col"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">Engenharia/Homologação (R$)</label>
-                <input type="number" id="prop-custo-eng" class="input-glass p-3 rounded-lg font-bold text-white prop-calc" placeholder="0.00"></div>
-              <div class="flex flex-col"><label class="text-xs text-slate-500 mb-1 ml-1 font-semibold">Peças Extras / Frete (R$)</label>
-                <input type="number" id="prop-custo-extra" class="input-glass p-3 rounded-lg font-bold text-white prop-calc" placeholder="0.00"></div>
-            </div>
-            <div class="flex flex-col mt-2">
-              <label class="text-xs text-yellow-500/80 mb-1 ml-1 font-semibold">Valor Médio da Conta de Energia do Cliente (R$/mês)</label>
-              <input type="number" id="prop-conta-energia" class="input-glass p-3 rounded-lg font-bold text-yellow-300" placeholder="Ex: 1200.00">
+            <!-- Resultado de Engenharia -->
+            <div class="glass p-8 rounded-[2.5rem] border border-yellow-400/20 shadow-2xl shadow-yellow-400/5 relative overflow-hidden">
+              <div class="absolute -top-10 -right-10 w-40 h-40 bg-yellow-400/10 blur-3xl pointer-events-none"></div>
+              
+              <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-4">Dimensionamento</p>
+              <div class="flex items-baseline gap-2 mb-2">
+                <span id="res-kwp" class="text-6xl font-bold text-white tracking-tighter">0.00</span>
+                <span class="text-2xl font-bold text-yellow-400">kWp</span>
+              </div>
+              <p class="text-xs text-slate-500 font-medium mb-10">Necessário para suprir 100% do consumo.</p>
+
+              <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-4">Investimento Total</p>
+              <div class="flex items-baseline gap-2 mb-10">
+                <span class="text-xl font-bold text-slate-400">R$</span>
+                <span id="prop-valor-total" class="text-4xl font-bold text-white tracking-tight">0,00</span>
+              </div>
+
+              <button id="btn-salvar-orc" class="btn-primary w-full h-14 text-sm font-bold uppercase tracking-widest gap-3 shadow-xl shadow-yellow-400/10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+                Finalizar Orçamento
+              </button>
             </div>
 
-            <div class="p-6 bg-yellow-500/10 border border-yellow-500/30 rounded-xl mt-6 text-center">
-              <p class="text-xs uppercase font-bold text-yellow-500/80 mb-1">Valor Venda (Chave na Mão)</p>
-              <div class="text-4xl font-bold text-yellow-400">R$ <span id="prop-valor-total">0,00</span></div>
+            <!-- Inteligência de Mercado -->
+            <div class="glass p-8 rounded-3xl border border-blue-500/10 bg-blue-500/[0.02]">
+              <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-lg">🤖</div>
+                <div>
+                  <h4 class="text-sm font-bold text-white">Market Intelligence</h4>
+                  <p class="text-[10px] text-blue-500 uppercase tracking-widest font-bold">Bot Solar v1.4</p>
+                </div>
+              </div>
+              
+              <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                O agente irá buscar preços reais na região de <b><span id="lbl-market-cidade">...</span></b> para produtos similares e comparar sua margem.
+              </p>
+
+              <button id="btn-analisar-mercado" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 group">
+                <svg class="w-4 h-4 group-hover:rotate-12 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                Fazer Varredura Local
+              </button>
+
+              <div id="agente-status" class="hidden mt-4 text-[10px] text-center text-blue-400 font-bold uppercase tracking-wider py-2 bg-blue-500/5 rounded-lg border border-blue-500/10 animate-pulse">
+                Iniciando Varredura...
+              </div>
+
+              <div id="agente-resultado" class="hidden mt-6 space-y-4">
+                <!-- Resultado -->
+              </div>
             </div>
 
-            <button id="btn-salvar-orc" class="btn-primary w-full py-4 rounded-xl mt-4 font-bold uppercase tracking-wider shadow-lg">SALVAR ORÇAMENTO</button>
           </div>
         </div>
+
       </div>
     `;
 
-    document.getElementById('prop-cliente-select').addEventListener('change', () => UI.populateSizingClient());
+    // Re-attach all events
+    document.getElementById('prop-cliente-select').addEventListener('change', (e) => {
+      UI.populateSizingClient();
+      const sel = e.target;
+      if (sel.value) {
+        const cli = AppState.clientes.find(c => c.id === sel.value);
+        if (cli) {
+          document.getElementById('lbl-market-cidade').innerText = cli.endereco?.split(' - ')[1]?.split(', ')[1] || 'sua região';
+        }
+      }
+    });
+
     document.getElementById('calc-kwh').addEventListener('input', () => Calc.update());
     document.getElementById('calc-estado').addEventListener('change', () => Calc.carregarCidades());
     document.getElementById('calc-cidade').addEventListener('change', () => Calc.update());
-
-    // Agente de Inteligência de Mercado
     document.getElementById('btn-analisar-mercado').addEventListener('click', () => UI.rodarAgenteMarket());
-
-    // Proposal logic events
     document.getElementById('btn-add-mat').addEventListener('click', () => UI.addMaterialManual());
     document.querySelectorAll('.prop-calc').forEach(el => el.addEventListener('input', () => UI.calcProposalTotal()));
-    document.getElementById('btn-salvar-orc').addEventListener('click', () => {
-      import('./pdf.js').then(m => m.salvarOrcamento());
-    });
+    
+    document.getElementById('btn-salvar-orc').addEventListener('click', () => import('./pdf.js').then(m => m.salvarOrcamento()));
+    document.getElementById('btn-salvar-orc-topo').addEventListener('click', () => import('./pdf.js').then(m => m.salvarOrcamento()));
+
     document.getElementById('input-img-import').addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
       file.type === 'application/pdf' ? UI.parsePdfFile(file) : UI.parseImportImage(file);
     });
-    const dropZone = document.getElementById('label-img-import');
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-yellow-500/70'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-yellow-500/70'));
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('border-yellow-500/70');
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      file.type === 'application/pdf' ? UI.parsePdfFile(file) : UI.parseImportImage(file);
-    });
 
-    // Colar imagem com Ctrl+V (ativo enquanto a página de proposta estiver aberta)
-    if (UI._pasteHandler) document.removeEventListener('paste', UI._pasteHandler);
-    UI._pasteHandler = (e) => {
-      if (!document.getElementById('label-img-import')) return; // saiu da página
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) { e.preventDefault(); UI.parseImportImage(file); return; }
-        }
-      }
-    };
-    document.addEventListener('paste', UI._pasteHandler);
-    
     UI.renderMateriaisList();
   },
 
@@ -905,142 +1115,151 @@ export const UI = {
 
   // ---------- ABA ORÇAMENTOS ----------
   async renderOrcamentos() {
+    document.getElementById('header-actions').innerHTML = ``;
+    
     document.getElementById('tab-content').innerHTML = `
-      <div class="glass p-8 rounded-2xl">
-        <h2 class="text-2xl font-bold mb-2 text-yellow-400">Histórico de Propostas</h2>
-        <p class="text-sm text-slate-400 mb-6">Propostas geradas ficam salvas aqui. Você pode baixar o PDF ou enviar pelo WhatsApp.</p>
-        <div id="lista-orca" class="space-y-3">
-          <div class="py-8 text-center text-slate-500">Carregando...</div>
+      <div class="max-w-5xl mx-auto space-y-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold tracking-tight text-white">Histórico de Propostas</h2>
+            <p class="text-sm text-slate-500 font-medium">Visualize e gerencie todos os orçamentos técnicos gerados pelo sistema.</p>
+          </div>
+          <div class="flex gap-3">
+             <div class="relative w-full md:w-64">
+              <input type="text" id="orc-search" placeholder="Buscar por cliente..." class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-yellow-400 outline-none transition-all">
+            </div>
+          </div>
+        </div>
+
+        <div id="lista-orca" class="grid grid-cols-1 gap-4">
+          <div class="flex flex-col items-center justify-center p-20 glass rounded-3xl border border-white/5 text-slate-500">
+            <div class="w-10 h-10 border-2 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin mb-4"></div>
+            <p class="text-xs font-bold uppercase tracking-widest">Sincronizando com o Banco...</p>
+          </div>
         </div>
       </div>
     `;
+
     try {
       const list = await Data.getOrcamentos() || [];
       const container = document.getElementById('lista-orca');
+      
       if (list.length === 0) {
-        container.innerHTML = `<div class="py-8 text-center text-slate-500">Nenhuma proposta gerada ainda.</div>`;
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center p-20 glass rounded-3xl border border-white/5 text-center">
+            <div class="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-3xl mb-4">📂</div>
+            <h3 class="text-lg font-bold text-white mb-1">Nenhum registro encontrado</h3>
+            <p class="text-sm text-slate-500 max-w-xs">Você ainda não gerou nenhuma proposta técnica. Inicie um dimensionamento para começar.</p>
+          </div>
+        `;
         return;
       }
 
-      container.innerHTML = list.map(o => {
-        const data  = new Date(o.created_at).toLocaleDateString('pt-BR');
-        const hora  = new Date(o.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const valor = o.valor_total
-          ? 'R$ ' + Number(o.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-          : '–';
-        const kwp   = o.potencia_kwp ? `${o.potencia_kwp} kWp` : '–';
-        const cidade = o.dados_proposta?.cidade || '';
-        const estado = o.dados_proposta?.estado || '';
-        const local  = cidade && estado ? `${cidade}/${estado}` : '–';
-        const tel    = o.clientes?.tel || '';
+      const renderList = (items) => {
+        container.innerHTML = items.map(o => {
+          const dt = new Date(o.created_at);
+          const dataFmt = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+          const horaFmt = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          
+          const valorFmt = o.valor_total
+            ? Number(o.valor_total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            : 'R$ 0,00';
+            
+          const kwpFmt = o.potencia_kwp ? `${o.potencia_kwp} kWp` : '–';
+          const cidade = o.dados_proposta?.cidade || '';
+          const estado = o.dados_proposta?.estado || '';
+          const local  = cidade && estado ? `${cidade}, ${estado}` : 'Local não informado';
+          
+          const emailCliente = o.clientes?.email || '';
+          const telLimpo = (o.clientes?.tel || '').replace(/\D/g, '');
 
-        // Botão E-mail
-        const emailCliente = o.clientes?.email || '';
-        const assunto = `Proposta Comercial - Energia Solar Fotovoltaica | ${o.cliente_nome}`;
-        const corpo =
-          `Ola, ${o.cliente_nome}!\n\n` +
-          `E com satisfacao que encaminhamos sua proposta personalizada de geracao de energia solar fotovoltaica, ` +
-          `elaborada com base no seu perfil de consumo e nas condicoes solares da sua regiao.\n\n` +
-          (o.pdf_url ? `Segue o link com sua proposta completa em PDF:\n${o.pdf_url}\n\n` : '') +
-          `Ficamos a inteira disposicao para quaisquer duvidas, ajustes ou para agendar uma apresentacao.\n\n` +
-          `Atenciosamente,\n` +
-          `${o.dados_proposta?.empresa_nome || 'Equipe Comercial'}`;
-        const mailtoUrl = emailCliente
-          ? `mailto:${emailCliente}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`
-          : '';
-        const btnEmail = emailCliente
-          ? `<a href="${mailtoUrl}"
-               class="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-bold transition-all">
-               📧 E-mail
-             </a>`
-          : `<span class="px-3 py-2 text-xs text-slate-600" title="Cliente sem e-mail cadastrado">📧 –</span>`;
-
-        // Botão WhatsApp
-        const telLimpo = tel.replace(/\D/g, '');
-        const emailCliente2 = o.clientes?.email || '';
-        const msgWpp = encodeURIComponent(
-          `Olá, ${o.cliente_nome}! Tudo bem? ☀️\n\n` +
-          `Sua proposta de energia solar fotovoltaica está pronta!\n\n` +
-          `Acabamos de enviar todos os detalhes para o seu e-mail` +
-          (emailCliente2 ? ` (${emailCliente2})` : '') +
-          `. Por favor, verifique sua caixa de entrada.\n\n` +
-          `Qualquer dúvida estamos à disposição, pode chamar aqui ou ligar. Será um prazer atendê-lo(a)!`
-        );
-        const wppUrl = telLimpo
-          ? `https://wa.me/55${telLimpo}?text=${msgWpp}`
-          : `https://wa.me/?text=${msgWpp}`;
-        const btnWpp = `<a href="${wppUrl}" target="_blank"
-             class="flex items-center gap-1 px-3 py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs font-bold transition-all">
-             💬 WhatsApp
-           </a>`;
-
-        // Botão download PDF (secundário, só ícone)
-        const btnDownload = o.pdf_url
-          ? `<a href="${o.pdf_url}" target="_blank" title="Baixar PDF"
-               class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-bold transition-all">
-               📄 PDF
-             </a>`
-          : '';
-
-        // Botão Gerar PDF
-        const btnPdf = o.pdf_url
-          ? `<a href="${o.pdf_url}" target="_blank" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 text-xs font-bold transition-all">📄 PDF</a>`
-          : `<button data-gerar="${o.id}" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 text-xs font-bold transition-all">📄 Gerar PDF</button>`;
-
-        return `
-          <div class="border border-white/5 rounded-xl p-5 hover:bg-white/5 transition-all" data-id="${o.id}">
-            <div class="flex items-start justify-between gap-4 flex-wrap">
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                  <span class="text-xs text-slate-500">${data} às ${hora}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-bold">${kwp}</span>
+          return `
+            <div class="glass p-6 rounded-3xl border border-white/5 hover:border-yellow-400/20 transition-all group relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-400/[0.02] blur-3xl group-hover:bg-yellow-400/[0.05] transition-all"></div>
+              
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                
+                <div class="flex items-center gap-5">
+                   <div class="w-14 h-14 rounded-2xl bg-slate-900/50 border border-white/5 flex flex-col items-center justify-center text-center">
+                      <span class="text-[10px] uppercase font-bold text-yellow-500/80 leading-none mb-1">${dt.toLocaleDateString('pt-BR', { month: 'short' }).replace('.','')}</span>
+                      <span class="text-xl font-bold text-white leading-none">${dt.getDate()}</span>
+                   </div>
+                   <div>
+                      <div class="flex items-center gap-2 mb-1">
+                        <h3 class="font-bold text-white group-hover:text-yellow-400 transition-colors">${o.cliente_nome || 'Cliente Sem Nome'}</h3>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-500 font-bold border border-yellow-400/10">${kwpFmt}</span>
+                      </div>
+                      <div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                        <span class="flex items-center gap-1">📍 ${local}</span>
+                        <span class="w-1 h-1 rounded-full bg-slate-800"></span>
+                        <span>🕒 ${horaFmt}</span>
+                      </div>
+                   </div>
                 </div>
-                <p class="font-bold text-white text-lg">${o.cliente_nome || '–'}</p>
-                <p class="text-slate-400 text-sm">${local}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-xs text-slate-500 mb-1">Valor Total</p>
-                <p class="text-2xl font-bold text-green-400">${valor}</p>
+
+                <div class="flex flex-col md:items-end gap-1">
+                  <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Valor do Projeto</span>
+                  <span class="text-xl font-bold text-white tracking-tight">${valorFmt}</span>
+                </div>
+
+                <div class="flex items-center gap-2 border-t md:border-t-0 pt-4 md:pt-0 border-white/5">
+                  ${o.pdf_url ? `
+                    <a href="${o.pdf_url}" target="_blank" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-lg transition-all border border-white/5" title="Ver PDF">📄</a>
+                  ` : `
+                    <button data-gerar="${o.id}" class="w-10 h-10 rounded-xl bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-500 flex items-center justify-center text-lg transition-all border border-yellow-400/10" title="Gerar PDF">⚡</button>
+                  `}
+                  
+                  ${emailCliente ? `
+                    <button onclick="window.location.href='mailto:${emailCliente}'" class="w-10 h-10 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg transition-all border border-blue-500/10" title="Enviar E-mail">📧</button>
+                  ` : ''}
+
+                  ${telLimpo ? `
+                    <a href="https://wa.me/55${telLimpo}" target="_blank" class="w-10 h-10 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 flex items-center justify-center text-lg transition-all border border-green-500/10" title="WhatsApp">💬</a>
+                  ` : ''}
+
+                  <button data-del="${o.id}" class="w-10 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center text-lg transition-all border border-red-500/10" title="Excluir">🗑️</button>
+                </div>
+
               </div>
             </div>
-            <div class="flex items-center gap-2 mt-4 pt-4 border-t border-white/5 flex-wrap">
-              ${btnPdf}
-              ${btnEmail}
-              ${btnWpp}
-              ${btnDownload}
-              <button data-del="${o.id}"
-                class="flex items-center gap-1 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all ml-auto">
-                🗑️ Excluir
-              </button>
-            </div>
-          </div>`;
-      }).join('');
+          `;
+        }).join('');
 
-      container.querySelectorAll('[data-del]').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          if (!confirm('Excluir esta proposta?')) return;
-          const id = e.currentTarget.dataset.del;
-          try {
-            await Data.deleteOrcamento(id);
-            UI.renderOrcamentos();
-          } catch(err) {
-            alert('Erro ao excluir: ' + err.message);
-          }
+        // Listeners
+        container.querySelectorAll('[data-del]').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            if (!confirm('Excluir esta proposta permanentemente?')) return;
+            const id = e.currentTarget.dataset.del;
+            try {
+              await Data.deleteOrcamento(id);
+              UI.renderOrcamentos();
+            } catch(err) { alert('Erro: ' + err.message); }
+          });
         });
-      });
 
-      container.querySelectorAll('[data-gerar]').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const id = e.currentTarget.dataset.gerar;
-          const { gerarPDFDeOrcamento } = await import('./pdf.js');
-          gerarPDFDeOrcamento(id);
+        container.querySelectorAll('[data-gerar]').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const id = e.currentTarget.dataset.gerar;
+            const { gerarPDFDeOrcamento } = await import('./pdf.js');
+            gerarPDFDeOrcamento(id);
+          });
         });
+      };
+
+      renderList(list);
+
+      // Busca local
+      document.getElementById('orc-search').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const filtered = list.filter(o => 
+          (o.cliente_nome || '').toLowerCase().includes(q) ||
+          (o.dados_proposta?.cidade || '').toLowerCase().includes(q)
+        );
+        renderList(filtered);
       });
 
     } catch(e) {
-      console.error(e);
-      document.getElementById('lista-orca').innerHTML =
-        `<div class="py-8 text-center text-red-500">Erro ao carregar orçamentos.</div>`;
+      container.innerHTML = `<div class="p-20 text-center text-red-500 glass rounded-3xl border border-red-500/20">Erro crítico ao carregar histórico: ${e.message}</div>`;
     }
   }
 };
