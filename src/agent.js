@@ -127,7 +127,9 @@ INSTRUÇÕES PARA ANÁLISE DE PREÇOS:
 - Use SOMENTE os preços encontrados nos dados acima — esses são preços reais praticados
 - Priorize anúncios de OLX, MercadoLivre, GetNinjas e Habitissimo pois têm preços de mercado real
 - Preços de instalação completa (chave na mão) incluem: equipamentos + mão de obra + projeto + homologação
-- Se encontrar apenas preços de equipamentos (sem instalação), adicione 40-60% para estimar chave na mão
+- Se encontrar apenas preços de equipamentos/kit (sem instalação), adicione 30-45% para estimar instalação completa (mão de obra + projeto elétrico + homologação concessionária)
+- Preços encontrados em capitais (SP, RJ, BH, Curitiba, Florianópolis) costumam ser 25-35% mais caros que cidades do interior — se a localidade for interior, aplique esse desconto nos valores encontrados
+- Referência de mercado para interior do Brasil: R$ 2.200-2.800/kWp instalado (chave na mão). Se os dados da web estiverem acima disso sem justificativa, prefira a referência interna
 - Se os dados forem insuficientes ou contraditórios, indique confiabilidade "baixa" e use sua estimativa fundamentada
 - NÃO invente preços. Se não há dados, diga que não há dados suficientes na região
 

@@ -442,7 +442,8 @@ export const UI = {
       document.getElementById('cli-rua').value = cli.endereco || '';
     }
     document.getElementById('btn-save-cli').innerText = "ATUALIZAR CLIENTE";
-    window.scrollTo(0, 0);
+    document.getElementById('cli-form-container').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
   async deleteCliente(id) {
