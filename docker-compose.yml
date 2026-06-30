@@ -1,4 +1,18 @@
 services:
+  # Supabase (opcional - comentar se usar supabase start CLI)
+  # supabase:
+  #   build:
+  #     context: supabase
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "54321:54321"
+  #     - "54322:54322"
+  #   environment:
+  #     POSTGRES_PASSWORD: postgres
+  #     JWT_SECRET: your-jwt-secret-here
+  #   volumes:
+  #     - supabase-data:/var/lib/postgresql/data
+
   solar-pro:
     build:
       context: .
@@ -10,3 +24,10 @@ services:
       - .:/app
       - /app/node_modules
     restart: unless-stopped
+    environment:
+      # A app detecta automaticamente se é local ou remoto
+      # Local: http://localhost:54321
+      # Remoto: https://mkjznhswwuvtxrnoxmnv.supabase.co
+
+# volumes:
+#   supabase-data:
